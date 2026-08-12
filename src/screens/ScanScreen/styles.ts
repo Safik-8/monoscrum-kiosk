@@ -1,0 +1,205 @@
+import { StyleSheet } from 'react-native';
+import { Colors } from '../../constants/theme';
+
+export const styles = StyleSheet.create({
+  page: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  overlayContainer: {
+    ...StyleSheet.absoluteFill,
+  },
+  overlayTop: {
+    flex: 1.2,
+    backgroundColor: 'rgba(0,0,0,0.60)',
+  },
+  middleRow: {
+    flexDirection: 'row',
+    height: 240,
+  },
+  side: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.60)',
+  },
+  cutout: {
+    width: 240,
+    height: 240,
+    backgroundColor: 'transparent',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+
+  // Corner brackets
+  corner: {
+    position: 'absolute',
+    width: 36,
+    height: 36,
+    borderColor: Colors.accent,
+    borderWidth: 3,
+  },
+  cTL: { top: 0, left: 0, borderBottomWidth: 0, borderRightWidth: 0 },
+  cTR: { top: 0, right: 0, borderBottomWidth: 0, borderLeftWidth: 0 },
+  cBL: { bottom: 0, left: 0, borderTopWidth: 0, borderRightWidth: 0 },
+  cBR: { bottom: 0, right: 0, borderTopWidth: 0, borderLeftWidth: 0 },
+
+  beam: {
+    width: '100%',
+    height: 2,
+    backgroundColor: Colors.accent,
+    position: 'absolute',
+    top: 0,
+    shadowColor: Colors.accent,
+    shadowOpacity: 0.9,
+    shadowRadius: 8,
+  },
+  faceOval: {
+    width: 120,
+    height: 160,
+    borderRadius: 60,
+    borderWidth: 1,
+    borderColor: 'rgba(30,86,217,0.3)',
+    position: 'absolute',
+    alignSelf: 'center',
+    top: 38,
+  },
+
+  // Bottom panel
+  bottomPanel: {
+    flex: 1.2,
+    backgroundColor: 'rgba(0,0,0,0.60)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    gap: 10,
+  },
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    backgroundColor: 'rgba(30,86,217,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(30,86,217,0.2)',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  statusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: Colors.green,
+  },
+  statusText: {
+    fontSize: 12,
+    color: Colors.white,
+  },
+  errorBox: {
+    backgroundColor: 'rgba(220,38,38,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(220,38,38,0.25)',
+    borderRadius: 10,
+    padding: 10,
+    width: '100%',
+  },
+  errorText: {
+    fontSize: 13,
+    color: Colors.red,
+    textAlign: 'center',
+  },
+  hint: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    textAlign: 'center',
+  },
+  cameraControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: 20,
+    marginTop: 10,
+  },
+  secondaryBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryBtnIcon: {
+    fontSize: 20,
+    color: Colors.white,
+  },
+  captureBtn: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: 'rgba(30,86,217,0.12)', // Light blue outer glow ring
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 6,
+  },
+  captureBtnDisabled: {
+    opacity: 0.5,
+  },
+  captureBtnInner: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 32,
+    backgroundColor: Colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 4,
+    borderWidth: 2,
+    borderColor: Colors.border,
+  },
+  captureBtnCore: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: Colors.accent,
+  },
+
+  // Permission screens
+  permCenter: {
+    flex: 1,
+    backgroundColor: Colors.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+  },
+  permIcon: {
+    fontSize: 56,
+    marginBottom: 20,
+  },
+  permTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: Colors.text,
+    marginBottom: 10,
+  },
+  permText: {
+    fontSize: 14,
+    color: Colors.textSub,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 28,
+  },
+  permBtn: {
+    backgroundColor: Colors.accent,
+    borderRadius: 14,
+    minHeight: 52,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  permBtnText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.white,
+  },
+});
