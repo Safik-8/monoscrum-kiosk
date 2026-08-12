@@ -11,16 +11,6 @@ interface Props {
 }
 
 export function BottomTabBar({ activeTab, onTabPress }: Props) {
-  const scanScale = useRef(new Animated.Value(1)).current;
-
-  function handleScanPress() {
-    Animated.sequence([
-      Animated.timing(scanScale, { toValue: 0.88, duration: 80, useNativeDriver: true }),
-      Animated.timing(scanScale, { toValue: 1, duration: 160, useNativeDriver: true }),
-    ]).start();
-    onTabPress('scan');
-  }
-
   return (
     <View style={styles.bar}>
       {/* New */}
@@ -35,20 +25,29 @@ export function BottomTabBar({ activeTab, onTabPress }: Props) {
         <Text style={[styles.label, activeTab === 'new' && styles.labelActive]}>New</Text>
       </Pressable>
 
-      {/* Scan — center raised CTA */}
-      <View style={styles.scanWrap}>
-        <Animated.View style={{ transform: [{ scale: scanScale }] }}>
-          <Pressable
-            style={[styles.scanBtn, activeTab === 'scan' && styles.scanBtnActive]}
-            onPress={handleScanPress}
-          >
-            <Ionicons name="scan-outline" size={24} color={Colors.white} />
-          </Pressable>
-        </Animated.View>
-        <Text style={[styles.label, activeTab === 'scan' && styles.labelActive, styles.scanLabel]}>
-          Scan
-        </Text>
-      </View>
+      {/* History */}
+      <Pressable style={styles.tab} onPress={() => onTabPress('history')}>
+        <View style={[styles.iconWrap, activeTab === 'history' && styles.iconWrapActive]}>
+          <Ionicons 
+            name="time-outline" 
+            size={22} 
+            color={activeTab === 'history' ? Colors.tabActive : Colors.tabInactive} 
+          />
+        </View>
+        <Text style={[styles.label, activeTab === 'history' && styles.labelActive]}>History</Text>
+      </Pressable>
+
+      {/* Scan */}
+      <Pressable style={styles.tab} onPress={() => onTabPress('scan')}>
+        <View style={[styles.iconWrap, activeTab === 'scan' && styles.iconWrapActive]}>
+          <Ionicons 
+            name="scan-outline" 
+            size={22} 
+            color={activeTab === 'scan' ? Colors.tabActive : Colors.tabInactive} 
+          />
+        </View>
+        <Text style={[styles.label, activeTab === 'scan' && styles.labelActive]}>Scan</Text>
+      </Pressable>
 
       {/* Settings */}
       <Pressable style={styles.tab} onPress={() => onTabPress('settings')}>

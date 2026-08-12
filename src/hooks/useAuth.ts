@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Alert } from 'react-native';
+import * as Location from 'expo-location';
 import { CameraView } from 'expo-camera';
 import { API_URL, REFRESH_TOKEN_KEY } from '../constants/config';
 import { getDeviceId } from '../lib/deviceId';
@@ -20,6 +21,10 @@ interface UseAuthReturn {
   login: () => Promise<void>;
   logout: () => Promise<void>;
   scanFace: (cameraRef: React.RefObject<CameraView | null>) => Promise<void>;
+  scanResult: any;
+  clearScanResult: () => void;
+  kioskLocation: { latitude: number; longitude: number } | null;
+  setKioskLocation: (loc: { latitude: number; longitude: number } | null) => void;
 }
 
 export function useAuth(): UseAuthReturn {
@@ -27,8 +32,27 @@ export function useAuth(): UseAuthReturn {
   const [session, setSession] = useState<Session | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [scanResult, setScanResult] = useState<any>(null);
+  const [kioskLocation, setKioskLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+
+  async function checkExistingLocation() {
+    try {
+      const { status } = await Location.getForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        setKioskLocation({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+      }
+    } catch (e) {
+      // Gracefully fail if location services are disabled
+      console.log('Failed to fetch existing location:', e);
+    }
+  }
 
   async function restoreSession() {
     try {
@@ -48,6 +72,7 @@ export function useAuth(): UseAuthReturn {
 
       await tokenStore.set(REFRESH_TOKEN_KEY, data.refreshToken);
       setSession({ accessToken: data.token, deviceId, operatorName: data.data?.user?.name });
+      await checkExistingLocation();
       setAppScreen('main');
     } catch {
       await tokenStore.remove(REFRESH_TOKEN_KEY);
@@ -73,6 +98,7 @@ export function useAuth(): UseAuthReturn {
       await tokenStore.set(REFRESH_TOKEN_KEY, data.refreshToken);
       setSession({ accessToken: data.token, deviceId, operatorName: data.data?.user?.name });
       setPassword('');
+      await checkExistingLocation();
       setAppScreen('main');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed.');
@@ -109,6 +135,9 @@ export function useAuth(): UseAuthReturn {
     try {
       const image = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.65 });
       if (!image?.base64) throw new Error('Unable to capture camera image.');
+      
+      // Freeze UI on captured image immediately
+      setCapturedImage(`data:image/jpeg;base64,${image.base64}`);
 
       const response = await fetchWithTimeout(`${API_URL}/kiosk/attendance/scan`, {
         method: 'POST',
@@ -116,14 +145,19 @@ export function useAuth(): UseAuthReturn {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.accessToken}`,
         },
-        body: JSON.stringify({ imageBase64: image.base64, deviceId: session.deviceId }),
+        body: JSON.stringify({ 
+          imageBase64: image.base64, 
+          deviceId: session.deviceId,
+          location: kioskLocation 
+        }),
       });
       const result = await parseResponse(response);
-      Alert.alert('✅ Attendance Recorded', result.message || 'Scan completed successfully.');
+      setScanResult(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Face scan failed.');
     } finally {
       setBusy(false);
+      setCapturedImage(null);
     }
   }
 
@@ -134,11 +168,20 @@ export function useAuth(): UseAuthReturn {
     password,
     busy,
     error,
+    capturedImage,
     setEmail,
     setPassword,
     restoreSession,
     login,
     logout,
     scanFace,
+    scanResult,
+    clearScanResult: () => {
+      setScanResult(null);
+      setCapturedImage(null);
+      setError('');
+    },
+    kioskLocation,
+    setKioskLocation,
   };
 }

@@ -3,32 +3,35 @@ import { Colors, Layout } from '../../constants/theme';
 
 export const styles = StyleSheet.create({
   bar: {
-    height: Layout.bottomBarHeight,
+    position: 'absolute',
+    bottom: 24,
+    left: 24,
+    right: 24,
+    height: 72,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    paddingHorizontal: 16,
-    paddingBottom: Layout.iosPaddingBottom,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 8,
+    borderRadius: 36,
+    paddingHorizontal: 8,
+    shadowColor: Colors.accent,
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 10,
   },
   tab: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
+    height: '100%',
   },
   iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 60,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   iconWrapActive: {
     backgroundColor: Colors.accentDim,
@@ -41,7 +44,7 @@ export const styles = StyleSheet.create({
     color: Colors.tabActive,
   },
   label: {
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.tabInactive,
     fontWeight: '600',
   },
@@ -49,33 +52,4 @@ export const styles = StyleSheet.create({
     color: Colors.tabActive,
   },
 
-  // Center flush scan button
-  scanWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  scanBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: Colors.accent,
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  scanBtnActive: {
-    shadowOpacity: 0.7,
-  },
-  scanIcon: {
-    fontSize: 26,
-    color: Colors.white,
-  },
-  scanLabel: {
-    marginTop: 4,
-  },
 });

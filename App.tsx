@@ -12,12 +12,14 @@ import { useDrawer } from './src/hooks/useDrawer';
 import { FixedHeader } from './src/components/FixedHeader';
 import { BottomTabBar } from './src/components/BottomTabBar';
 import { DrawerMenu } from './src/components/DrawerMenu';
+import { LocationModal } from './src/components/LocationModal';
 
 // Screens
 import { LoadingScreen } from './src/screens/LoadingScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { ScanScreen } from './src/screens/ScanScreen';
 import { NewScreen } from './src/screens/NewScreen';
+import { HistoryScreen } from './src/screens/HistoryScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 
 // Theme
@@ -71,6 +73,12 @@ export default function App() {
   // ── Main App ───────────────────────────────────────────────────────────────
   return (
     <View style={styles.root}>
+      <LocationModal
+        visible={auth.appScreen === 'main' && auth.kioskLocation === null}
+        onLocationGranted={(loc) => auth.setKioskLocation(loc)}
+        onClose={() => auth.setKioskLocation({ latitude: 0, longitude: 0 })} // fallback if dismissed
+      />
+
       <StatusBar style="dark" />
 
       {/* Fixed top header */}
@@ -89,10 +97,14 @@ export default function App() {
             cameraRef={cameraRef}
             busy={auth.busy}
             error={auth.error}
+            capturedImage={auth.capturedImage}
+            scanResult={auth.scanResult}
+            onClearScanResult={auth.clearScanResult}
             onScan={() => auth.scanFace(cameraRef)}
           />
         )}
-        {activeTab === 'new' && <NewScreen />}
+        {activeTab === 'new' && <NewScreen session={auth.session} />}
+        {activeTab === 'history' && <HistoryScreen session={auth.session} />}
         {activeTab === 'settings' && (
           <SettingsScreen
             session={auth.session}

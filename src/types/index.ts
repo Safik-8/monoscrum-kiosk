@@ -6,7 +6,7 @@ export type Session = {
 
 export type AppScreen = 'loading' | 'login' | 'main';
 
-export type BottomTab = 'new' | 'scan' | 'settings';
+export type BottomTab = 'new' | 'history' | 'scan' | 'settings';
 
 export type AuthResponse = {
   status: string;
