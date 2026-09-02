@@ -27,12 +27,9 @@ export function FixedHeader({ activeTab, operatorName, onMenuPress }: Props) {
       <View style={styles.safeAreaSpacer} />
 
       {/*
-        ┌─────────────┬──────────────────────────┬─────────────┐
-        │  44px left  │      flex:1 center        │ 44px right  │
-        │  hamburger  │   logo  +  page title     │   avatar    │
-        └─────────────┴──────────────────────────┴─────────────┘
-        Equal fixed widths on both sides guarantee the center is
-        always mathematically centered to the full header width.
+        Absolute Centered Layout:
+        - The center slot is absolutely positioned to cover the full width, guaranteeing perfect centering.
+        - Left and right slots are positioned on the sides with z-index to sit above the center slot.
       */}
       <View style={styles.contentRow}>
 

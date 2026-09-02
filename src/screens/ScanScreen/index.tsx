@@ -39,12 +39,14 @@ export function ScanScreen({
   onScan,
 }: Props) {
   const scanAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
+  // Scanner beam animation
   useEffect(() => {
     const scanLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(scanAnim, {
-          toValue: 220,
+          toValue: 380, // Height of the cutout
           duration: 2200,
           easing: Easing.linear,
           useNativeDriver: true,
@@ -60,6 +62,61 @@ export function ScanScreen({
     scanLoop.start();
     return () => scanLoop.stop();
   }, []);
+
+  // Pulsing border glow animation
+  useEffect(() => {
+    const pulseLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.5,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    if (busy) {
+      pulseLoop.start();
+    } else {
+      pulseAnim.setValue(1);
+    }
+    return () => pulseLoop.stop();
+  }, [busy]);
+
+  // ── Auto-Capture Polling ──────────────────────────────────────────────────
+  useEffect(() => {
+    // If not busy, no result is shown, and camera permission is granted
+    if (!busy && !scanResult && cameraPermission?.granted && !error) {
+      const timer = setTimeout(() => {
+        onScan();
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [busy, scanResult, cameraPermission, error, onScan]);
+
+  // If there's an error, dismiss it quickly to resume scanning
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        onClearScanResult(); // this clears error too
+      }, 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [error, onClearScanResult]);
+
+  // ── Auto-Dismiss Success Screen ───────────────────────────────────────────
+  useEffect(() => {
+    if (scanResult) {
+      const timer = setTimeout(() => {
+        onClearScanResult();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [scanResult, onClearScanResult]);
 
   if (!cameraPermission) {
     return (
@@ -105,31 +162,28 @@ export function ScanScreen({
 
       {/* Overlay UI */}
       <View style={styles.overlayContainer} pointerEvents="box-none">
-        {/* Top darkened area */}
-        <View style={styles.overlayTop} />
-
-        {/* Cutout row */}
-        <View style={styles.middleRow}>
-          <View style={styles.side} />
-          <View style={styles.cutout}>
-            {/* Corner brackets */}
-            <View style={[styles.corner, styles.cTL]} />
-            <View style={[styles.corner, styles.cTR]} />
-            <View style={[styles.corner, styles.cBL]} />
-            <View style={[styles.corner, styles.cBR]} />
-            {/* Scan beam */}
+        <View style={styles.cutoutWrapper}>
+          <View style={styles.cutoutHole}>
             <Animated.View style={[styles.beam, { transform: [{ translateY: scanAnim }] }]} />
-            {/* Face guide oval */}
-            <View style={styles.faceOval} />
           </View>
-          <View style={styles.side} />
         </View>
 
+        <Animated.View 
+          style={[styles.cutoutBorder, { 
+            transform: [{ scale: pulseAnim }],
+            opacity: pulseAnim.interpolate({ inputRange: [1, 1.5], outputRange: [1, 0] })
+          }]} 
+          pointerEvents="none" 
+        />
+        <View style={styles.cutoutBorder} pointerEvents="none" />
+
         {/* Bottom panel */}
-        <View style={styles.bottomPanel}>
+        <View style={styles.bottomPanel} pointerEvents="box-none">
           <View style={styles.statusPill}>
-            <View style={styles.statusDot} />
-            <Text style={styles.statusText}>Camera Active · Face Detection Ready</Text>
+            <View style={[styles.statusDot, { backgroundColor: busy ? Colors.warning : Colors.accent }]} />
+            <Text style={styles.statusText}>
+              {busy ? 'Scanning...' : 'Position face to scan'}
+            </Text>
           </View>
 
           {!!error && (
@@ -137,33 +191,6 @@ export function ScanScreen({
               <Text style={styles.errorText}>⚠ {error}</Text>
             </View>
           )}
-
-          {/* <Text style={styles.hint}>Position your face inside the frame</Text> */}
-
-          {/* Camera Controls */}
-          <View style={styles.cameraControls}>
-            <Pressable style={styles.secondaryBtn}>
-              <Ionicons name="refresh-outline" size={24} color={styles.secondaryBtnIcon.color} />
-            </Pressable>
-
-            <Pressable
-              style={[styles.captureBtn, busy && styles.captureBtnDisabled]}
-              onPress={onScan}
-              disabled={busy}
-            >
-              <View style={styles.captureBtnInner}>
-                {busy ? (
-                  <ActivityIndicator color={Colors.accent} size="large" />
-                ) : (
-                  <View style={styles.captureBtnCore} />
-                )}
-              </View>
-            </Pressable>
-
-            <Pressable style={styles.secondaryBtn}>
-              <Ionicons name="flash-outline" size={24} color={styles.secondaryBtnIcon.color} />
-            </Pressable>
-          </View>
         </View>
       </View>
 

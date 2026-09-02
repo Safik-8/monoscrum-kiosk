@@ -19,7 +19,7 @@ export const styles = StyleSheet.create({
 
   // Explicit safe-area spacer — cleanly separated from the content row
   safeAreaSpacer: {
-    height: Platform.OS === 'ios' ? 44 : 24,
+    height: Platform.OS === 'ios' ? 44 : Platform.OS === 'android' ? 24 : 0,
   },
 
   // Main content row — fixed height, all children share the same vertical midline
@@ -27,16 +27,17 @@ export const styles = StyleSheet.create({
     height: CONTENT_ROW_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',          // vertically centers all direct children
+    justifyContent: 'space-between',
     paddingHorizontal: 8,
   },
 
   // ── Side slots ────────────────────────────────────────────────────────────
-  // Both left and right are the SAME fixed width → center is always symmetric
   sideSlot: {
     width: SIDE_SLOT_WIDTH,
     height: CONTENT_ROW_HEIGHT,
     alignItems: 'flex-start',      // left slot: content hugs left
     justifyContent: 'center',      // vertically center within the slot
+    zIndex: 2,                     // ensure it stays clickable above the absolute center
   },
   sideSlotRight: {
     alignItems: 'flex-end',        // right slot: content hugs right
@@ -44,11 +45,17 @@ export const styles = StyleSheet.create({
 
   // ── Center slot ───────────────────────────────────────────────────────────
   centerSlot: {
-    flex: 1,                       // takes all remaining space between the two fixed slots
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',      // centers logo + text within the remaining space
+    justifyContent: 'center',      // perfectly centered to the full header width
     gap: 8,
+    zIndex: 1,                     // sits behind the side buttons
+    pointerEvents: 'none',         // let clicks pass through to side buttons if they overlap
   },
   pageTitle: {
     fontSize: 15,
