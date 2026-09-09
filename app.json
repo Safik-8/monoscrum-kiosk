@@ -24,11 +24,11 @@
     "plugins": [
       "expo-secure-store",
       [
-        "expo-camera",
+        "react-native-vision-camera",
         {
-          "cameraPermission": "Allow MonoScrum Attendance Kiosk to scan faces for attendance.",
-          "recordAudioAndroid": false,
-          "barcodeScannerEnabled": false
+          "cameraPermissionText": "Allow MonoScrum Attendance Kiosk to scan faces for attendance.",
+          "enableMicrophonePermission": false,
+          "enableCodeScanner": false
         }
       ]
     ]

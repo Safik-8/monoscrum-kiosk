@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -9,28 +9,28 @@ import {
   Image,
   ScrollView,
 } from 'react-native';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { Camera, useCameraDevice, useFrameProcessor } from 'react-native-vision-camera';
+import { useFaceDetector } from 'react-native-vision-camera-face-detector';
+import { Worklets } from 'react-native-worklets-core';
 import { Ionicons } from '@expo/vector-icons';
 import { Easing } from 'react-native';
 import { Colors } from '../../constants/theme';
 import { styles } from './styles';
 
 interface Props {
-  cameraPermission: ReturnType<typeof useCameraPermissions>[0];
-  requestCameraPermission: ReturnType<typeof useCameraPermissions>[1];
-  cameraRef: React.RefObject<CameraView | null>;
+  hasCameraPermission: boolean;
+  requestCameraPermission: () => Promise<boolean>;
   busy: boolean;
   error: string;
   capturedImage?: string | null;
   scanResult?: any;
   onClearScanResult?: () => void;
-  onScan: () => void;
+  onScan: (ref: React.RefObject<Camera | null>) => void;
 }
 
 export function ScanScreen({
-  cameraPermission,
+  hasCameraPermission,
   requestCameraPermission,
-  cameraRef,
   busy,
   error,
   capturedImage,
@@ -38,8 +38,44 @@ export function ScanScreen({
   onClearScanResult,
   onScan,
 }: Props) {
+  const cameraRef = useRef<Camera>(null);
+  const device = useCameraDevice('front');
+  
   const scanAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  // Face alignment state (updated from worklet)
+  const [isFaceAligned, setIsFaceAligned] = useState(false);
+
+  const { detectFaces } = useFaceDetector({
+    performanceMode: 'fast',
+    contourMode: 'none',
+    landmarkMode: 'none',
+  });
+
+  // Safely update JS state from the frame processor
+  const setFaceAlignedJS = Worklets.createRunOnJS((aligned: boolean) => {
+    setIsFaceAligned(aligned);
+  });
+
+  const frameProcessor = useFrameProcessor((frame) => {
+    'worklet';
+    const faces = detectFaces(frame);
+    
+    // Very basic alignment check: just check if exactly 1 face is present and large enough.
+    // Production would calculate face bounds against screen coordinates.
+    if (faces.length === 1) {
+      const face = faces[0];
+      // simplistic check: bounding box width > 20% of frame
+      if (face.bounds.width > frame.width * 0.2) {
+        setFaceAlignedJS(true);
+      } else {
+        setFaceAlignedJS(false);
+      }
+    } else {
+      setFaceAlignedJS(false);
+    }
+  }, [detectFaces]);
 
   // Scanner beam animation
   useEffect(() => {
@@ -87,22 +123,19 @@ export function ScanScreen({
     return () => pulseLoop.stop();
   }, [busy]);
 
-  // ── Auto-Capture Polling ──────────────────────────────────────────────────
+  // ── Auto-Capture Logic ──────────────────────────────────────────────────
   useEffect(() => {
-    // If not busy, no result is shown, and camera permission is granted
-    if (!busy && !scanResult && cameraPermission?.granted && !error) {
-      const timer = setTimeout(() => {
-        onScan();
-      }, 2000);
-      return () => clearTimeout(timer);
+    // If not busy, no result is shown, camera ready, and face is aligned
+    if (!busy && !scanResult && !error && isFaceAligned && hasCameraPermission) {
+      onScan(cameraRef);
     }
-  }, [busy, scanResult, cameraPermission, error, onScan]);
+  }, [busy, scanResult, error, isFaceAligned, hasCameraPermission, onScan]);
 
   // If there's an error, dismiss it quickly to resume scanning
   useEffect(() => {
-    if (error) {
+    if (error && onClearScanResult) {
       const timer = setTimeout(() => {
-        onClearScanResult(); // this clears error too
+        onClearScanResult(); 
       }, 2500);
       return () => clearTimeout(timer);
     }
@@ -110,7 +143,7 @@ export function ScanScreen({
 
   // ── Auto-Dismiss Success Screen ───────────────────────────────────────────
   useEffect(() => {
-    if (scanResult) {
+    if (scanResult && onClearScanResult) {
       const timer = setTimeout(() => {
         onClearScanResult();
       }, 3000);
@@ -118,15 +151,7 @@ export function ScanScreen({
     }
   }, [scanResult, onClearScanResult]);
 
-  if (!cameraPermission) {
-    return (
-      <View style={styles.permCenter}>
-        <ActivityIndicator color={Colors.accent} size="large" />
-      </View>
-    );
-  }
-
-  if (!cameraPermission.granted) {
+  if (!hasCameraPermission) {
     return (
       <View style={styles.permCenter}>
         <Ionicons name="camera-outline" size={48} color={Colors.accent} style={{ marginBottom: 16 }} />
@@ -141,6 +166,14 @@ export function ScanScreen({
     );
   }
 
+  if (device == null) {
+    return (
+      <View style={styles.permCenter}>
+        <ActivityIndicator color={Colors.accent} size="large" />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.page}>
       {/* Live camera or Captured Preview */}
@@ -151,12 +184,13 @@ export function ScanScreen({
           resizeMode="cover"
         />
       ) : (
-        <CameraView
+        <Camera
           ref={cameraRef}
           style={StyleSheet.absoluteFill}
-          facing="front"
-          mirror
-          onCameraReady={() => {}}
+          device={device}
+          isActive={!busy && !scanResult && !capturedImage}
+          frameProcessor={frameProcessor}
+          photo={true}
         />
       )}
 

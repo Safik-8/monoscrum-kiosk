@@ -1,7 +1,7 @@
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { useCameraPermission } from 'react-native-vision-camera';
 import * as KeepAwake from 'expo-keep-awake';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 
 // Hooks
@@ -25,8 +25,7 @@ import { SettingsScreen } from './src/screens/SettingsScreen';
 // Theme
 import { Colors } from './src/constants/theme';
 
-// Active tab state (lifted to root since it controls both header and content)
-import { useState } from 'react';
+// Types
 import { BottomTab } from './src/types';
 
 export default function App() {
@@ -34,8 +33,7 @@ export default function App() {
   const drawer = useDrawer();
   const [activeTab, setActiveTab] = useState<BottomTab>('scan');
 
-  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
-  const cameraRef = useRef<CameraView | null>(null);
+  const { hasPermission: hasCameraPermission, requestPermission: requestCameraPermission } = useCameraPermission();
 
   // Keep screen awake while kiosk is active
   useEffect(() => {
@@ -92,15 +90,14 @@ export default function App() {
       <View style={styles.content}>
         {activeTab === 'scan' && (
           <ScanScreen
-            cameraPermission={cameraPermission}
+            hasCameraPermission={hasCameraPermission}
             requestCameraPermission={requestCameraPermission}
-            cameraRef={cameraRef}
             busy={auth.busy}
             error={auth.error}
             capturedImage={auth.capturedImage}
             scanResult={auth.scanResult}
             onClearScanResult={auth.clearScanResult}
-            onScan={() => auth.scanFace(cameraRef)}
+            onScan={auth.scanFace}
           />
         )}
         {activeTab === 'new' && <NewScreen session={auth.session} />}
