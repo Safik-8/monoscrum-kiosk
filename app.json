@@ -7,30 +7,36 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.monoscrum.kiosk",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow MonoScrum Attendance Kiosk to scan faces for attendance."
+      }
     },
     "android": {
+      "package": "com.monoscrum.kiosk",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-secure-store",
-      [
-        "react-native-vision-camera",
-        {
-          "cameraPermissionText": "Allow MonoScrum Attendance Kiosk to scan faces for attendance.",
-          "enableMicrophonePermission": false,
-          "enableCodeScanner": false
-        }
-      ]
-    ]
+      "expo-secure-store"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "e8d44179-fb16-413d-b22d-fc1c588c8f66"
+      }
+    },
+    "owner": "safik-8s-team"
   }
 }
