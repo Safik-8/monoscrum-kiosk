@@ -9,6 +9,7 @@ import { styles } from './styles';
 const TAB_TITLES: Record<BottomTab, string> = {
   scan: 'Face Scanner',
   new: 'New Entry',
+  history: 'Attendance History',
   settings: 'Settings',
 };
 
