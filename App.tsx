@@ -1,8 +1,8 @@
-import { useCameraPermission } from 'react-native-vision-camera';
+import { useCameraPermissions } from 'expo-camera';
 import * as KeepAwake from 'expo-keep-awake';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 
 // Hooks
 import { useAuth } from './src/hooks/useAuth';
@@ -33,14 +33,23 @@ export default function App() {
   const drawer = useDrawer();
   const [activeTab, setActiveTab] = useState<BottomTab>('scan');
 
-  const { hasPermission: hasCameraPermission, requestPermission: requestCameraPermission } = useCameraPermission();
+  const [permission, requestCameraPermission] = useCameraPermissions();
+  const hasCameraPermission = permission?.granted ?? false;
 
   // Keep screen awake while kiosk is active
   useEffect(() => {
+    if (Platform.OS === 'web') return;
+
     if (auth.appScreen === 'main') {
-      KeepAwake.activateKeepAwakeAsync('attendance-kiosk');
+      KeepAwake.activateKeepAwakeAsync('attendance-kiosk').catch(() => {});
     }
-    return () => { void KeepAwake.deactivateKeepAwake('attendance-kiosk'); };
+    return () => { 
+      try {
+        KeepAwake.deactivateKeepAwake('attendance-kiosk'); 
+      } catch (e) {
+        // Ignore error
+      }
+    };
   }, [auth.appScreen]);
 
   // Restore persisted session on mount
@@ -83,6 +92,7 @@ export default function App() {
       <FixedHeader
         activeTab={activeTab}
         operatorName={auth.session?.operatorName}
+        regionName={auth.session?.regionName}
         onMenuPress={drawer.openDrawer}
       />
 
@@ -90,6 +100,7 @@ export default function App() {
       <View style={styles.content}>
         {activeTab === 'scan' && (
           <ScanScreen
+            session={auth.session}
             hasCameraPermission={hasCameraPermission}
             requestCameraPermission={requestCameraPermission}
             busy={auth.busy}

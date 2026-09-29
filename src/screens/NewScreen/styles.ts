@@ -98,7 +98,7 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 40,
+    marginTop: 10,
   },
   backBtn: {
     width: 44,

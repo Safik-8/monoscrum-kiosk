@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { View, Text, TextInput, FlatList, Pressable, ActivityIndicator, Image, StyleSheet } from 'react-native';
+import { View, Text, TextInput, FlatList, Pressable, ActivityIndicator, Image, StyleSheet, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Colors } from '../../constants/theme';
@@ -10,6 +10,7 @@ import { Session } from '../../types';
 export function NewScreen({ session }: { session: Session | null }) {
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView | null>(null);
+  const [isModalReady, setIsModalReady] = React.useState(false);
   
   const {
     users,
@@ -24,6 +25,12 @@ export function NewScreen({ session }: { session: Session | null }) {
     captureAndEnroll,
     cancelEnrollment
   } = useEnroll(session);
+
+  React.useEffect(() => {
+    if (!selectedUser) {
+      setIsModalReady(false);
+    }
+  }, [selectedUser]);
 
   // Loading state (permissions not loaded)
   if (!permission) {
@@ -87,7 +94,14 @@ export function NewScreen({ session }: { session: Session | null }) {
                     </View>
                   )}
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.userName}>{item.name}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={styles.userName}>{item.name}</Text>
+                      {item.isFaceEnrolled && (
+                        <View style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                          <Text style={{ color: '#10B981', fontSize: 10, fontWeight: 'bold' }}>ENROLLED</Text>
+                        </View>
+                      )}
+                    </View>
                     <Text style={styles.userHandle}>@{item.username || 'employee'}</Text>
                   </View>
                   <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} style={styles.chevron} />
@@ -100,57 +114,66 @@ export function NewScreen({ session }: { session: Session | null }) {
 
       {/* Camera Capture State */}
       {selectedUser && (
-        <View style={styles.cameraContainer}>
-          {capturedImage ? (
-             <Image source={{ uri: capturedImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-          ) : (
-             <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="front" mirror />
-          )}
+        <Modal 
+          visible={!!selectedUser} 
+          animationType="slide" 
+          transparent={false}
+          onShow={() => setIsModalReady(true)}
+        >
+          <View style={styles.cameraContainer}>
+            {isModalReady && (
+              capturedImage ? (
+                 <Image source={{ uri: capturedImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+              ) : (
+                 <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="front" mirror />
+              )
+            )}
 
-          <View style={styles.overlayContainer} pointerEvents="box-none">
-            
-            {/* Top Bar */}
-            <View style={styles.headerRow}>
-              <Pressable style={styles.backBtn} onPress={cancelEnrollment} disabled={busy || success}>
-                <Ionicons name="arrow-back" size={24} color="#fff" />
-              </Pressable>
+            <View style={styles.overlayContainer} pointerEvents="box-none">
               
-              <View style={styles.enrollTarget}>
-                <Text style={styles.enrollTargetText}>Enrolling: {selectedUser.name}</Text>
-              </View>
-              
-              {/* Placeholder for symmetry */}
-              <View style={{ width: 44 }} />
-            </View>
-
-            {/* Error Display */}
-            {error ? (
-              <View style={{ backgroundColor: 'rgba(255,0,0,0.8)', padding: 12, borderRadius: 12, marginHorizontal: 20 }}>
-                <Text style={{ color: '#fff', textAlign: 'center', fontWeight: 'bold' }}>{error}</Text>
-              </View>
-            ) : null}
-
-            {/* Bottom Controls */}
-            <View style={styles.captureContainer}>
-              <Pressable style={styles.captureBtn} onPress={() => captureAndEnroll(cameraRef)} disabled={busy || success}>
-                <View style={styles.captureBtnInner}>
-                  {busy ? <ActivityIndicator color={Colors.accent} size="large" /> : <Ionicons name="camera" size={32} color={Colors.accent} />}
+              {/* Top Bar */}
+              <View style={styles.headerRow}>
+                <Pressable style={styles.backBtn} onPress={cancelEnrollment} disabled={busy || success}>
+                  <Ionicons name="arrow-back" size={24} color="#fff" />
+                </Pressable>
+                
+                <View style={styles.enrollTarget}>
+                  <Text style={styles.enrollTargetText}>Enrolling: {selectedUser.name}</Text>
                 </View>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      )}
+                
+                {/* Placeholder for symmetry */}
+                <View style={{ width: 44 }} />
+              </View>
 
-      {/* Success Toast Overlay */}
-      {success && (
-        <View style={styles.toastOverlay}>
-          <View style={styles.toastContent}>
-            <Ionicons name="checkmark-circle" size={80} color={Colors.success || '#10B981'} />
-            <Text style={styles.toastTitle}>Enrolled!</Text>
-            <Text style={styles.toastSub}>{selectedUser?.name}'s face has been successfully secured in the AI database.</Text>
+              {/* Error Display */}
+              {error ? (
+                <View style={{ backgroundColor: 'rgba(255,0,0,0.8)', padding: 12, borderRadius: 12, marginHorizontal: 20 }}>
+                  <Text style={{ color: '#fff', textAlign: 'center', fontWeight: 'bold' }}>{error}</Text>
+                </View>
+              ) : null}
+
+              {/* Bottom Controls */}
+              <View style={styles.captureContainer}>
+                <Pressable style={styles.captureBtn} onPress={() => captureAndEnroll(cameraRef)} disabled={busy || success}>
+                  <View style={styles.captureBtnInner}>
+                    {busy ? <ActivityIndicator color={Colors.accent} size="large" /> : <Ionicons name="camera" size={32} color={Colors.accent} />}
+                  </View>
+                </Pressable>
+              </View>
+            </View>
+
+            {/* Success Toast Overlay inside Modal */}
+            {success && (
+              <View style={styles.toastOverlay}>
+                <View style={styles.toastContent}>
+                  <Ionicons name="checkmark-circle" size={80} color={Colors.success || '#10B981'} />
+                  <Text style={styles.toastTitle}>Enrolled!</Text>
+                  <Text style={styles.toastSub}>{selectedUser?.name}'s face has been successfully secured in the AI database.</Text>
+                </View>
+              </View>
+            )}
           </View>
-        </View>
+        </Modal>
       )}
 
     </View>

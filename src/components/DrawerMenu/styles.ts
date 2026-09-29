@@ -1,4 +1,4 @@
-import { Dimensions, StyleSheet } from 'react-native';
+import { Dimensions, StyleSheet, Platform, StatusBar } from 'react-native';
 import { Colors, Layout } from '../../constants/theme';
 import { DRAWER_WIDTH_RATIO } from '../../constants/config';
 
@@ -8,6 +8,7 @@ export const styles = StyleSheet.create({
   root: {
     ...StyleSheet.absoluteFill,
     zIndex: 200,
+    elevation: 100,
   },
   backdrop: {
     ...StyleSheet.absoluteFill,
@@ -29,7 +30,7 @@ export const styles = StyleSheet.create({
   },
   inner: {
     flex: 1,
-    paddingTop: Layout.drawerPaddingTop,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 24) + 20 : Layout.drawerPaddingTop,
     paddingHorizontal: 20,
     paddingBottom: 20,
   },

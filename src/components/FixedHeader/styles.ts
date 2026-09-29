@@ -1,4 +1,4 @@
-import { StyleSheet, Platform } from 'react-native';
+import { StyleSheet, Platform, StatusBar } from 'react-native';
 import { Colors } from '../../constants/theme';
 
 // Both side slots must be identical width — this is what guarantees true center
@@ -19,7 +19,7 @@ export const styles = StyleSheet.create({
 
   // Explicit safe-area spacer — cleanly separated from the content row
   safeAreaSpacer: {
-    height: Platform.OS === 'ios' ? 44 : Platform.OS === 'android' ? 24 : 0,
+    height: Platform.OS === 'ios' ? 50 : Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0,
   },
 
   // Main content row — fixed height, all children share the same vertical midline

@@ -22,7 +22,7 @@ export function BottomTabBar({ activeTab, onTabPress }: Props) {
             color={activeTab === 'new' ? Colors.tabActive : Colors.tabInactive} 
           />
         </View>
-        <Text style={[styles.label, activeTab === 'new' && styles.labelActive]}>New</Text>
+        <Text style={[styles.label, activeTab === 'new' && styles.labelActive]}>Enroll</Text>
       </Pressable>
 
       {/* History */}

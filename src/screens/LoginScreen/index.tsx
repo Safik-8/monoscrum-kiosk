@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -37,6 +37,7 @@ export function LoginScreen({
 }: Props) {
   const fadeIn = useRef(new Animated.Value(0)).current;
   const slideIn = useRef(new Animated.Value(40)).current;
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     Animated.parallel([
@@ -71,10 +72,10 @@ export function LoginScreen({
 
         <View style={styles.divider} />
 
-        <Text style={styles.title}>Operator Sign In</Text>
+        {/* <Text style={styles.title}>Operator Sign In</Text>
         <Text style={styles.subtitle}>
           Authorized personnel only. Sign in to activate face scanning.
-        </Text>
+        </Text> */}
 
         {/* Email */}
         <View style={styles.inputGroup}>
@@ -94,16 +95,28 @@ export function LoginScreen({
         {/* Password */}
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>Password</Text>
-          <TextInput
-            style={styles.input}
-            value={password}
-            onChangeText={onChangePassword}
-            placeholder="••••••••"
-            placeholderTextColor="#8FA3C0"
-            secureTextEntry
-            editable={!busy}
-            onSubmitEditing={onLogin}
-          />
+          <View style={styles.passwordInputContainer}>
+            <TextInput
+              style={[styles.input, { paddingRight: 40 }]}
+              value={password}
+              onChangeText={onChangePassword}
+              placeholder="••••••••"
+              placeholderTextColor="#8FA3C0"
+              secureTextEntry={!showPassword}
+              editable={!busy}
+              onSubmitEditing={onLogin}
+            />
+            <Pressable
+              style={styles.eyeIcon}
+              onPress={() => setShowPassword(!showPassword)}
+            >
+              <Ionicons
+                name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                size={20}
+                color="#8FA3C0"
+              />
+            </Pressable>
+          </View>
         </View>
 
         {/* Error */}

@@ -30,7 +30,8 @@
       "favicon": "./assets/logofinal.png"
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-status-bar"
     ],
     "extra": {
       "eas": {

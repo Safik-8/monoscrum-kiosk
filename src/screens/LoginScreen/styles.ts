@@ -73,6 +73,16 @@ export const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.text,
   },
+  passwordInputContainer: {
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 12,
+    zIndex: 1,
+    padding: 4,
+  },
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',

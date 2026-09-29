@@ -8,7 +8,7 @@ import { styles } from './styles';
 
 const TAB_TITLES: Record<BottomTab, string> = {
   scan: 'Face Scanner',
-  new: 'New Entry',
+  new: 'Face Enrollment',
   history: 'Attendance History',
   settings: 'Settings',
 };
@@ -16,10 +16,11 @@ const TAB_TITLES: Record<BottomTab, string> = {
 interface Props {
   activeTab: BottomTab;
   operatorName?: string;
+  regionName?: string;
   onMenuPress: () => void;
 }
 
-export function FixedHeader({ activeTab, operatorName, onMenuPress }: Props) {
+export function FixedHeader({ activeTab, operatorName, regionName, onMenuPress }: Props) {
   const initial = operatorName ? operatorName.charAt(0).toUpperCase() : 'K';
 
   return (
@@ -27,11 +28,6 @@ export function FixedHeader({ activeTab, operatorName, onMenuPress }: Props) {
       {/* Status bar safe-area spacer */}
       <View style={styles.safeAreaSpacer} />
 
-      {/*
-        Absolute Centered Layout:
-        - The center slot is absolutely positioned to cover the full width, guaranteeing perfect centering.
-        - Left and right slots are positioned on the sides with z-index to sit above the center slot.
-      */}
       <View style={styles.contentRow}>
 
         {/* Left slot — fixed 44px */}
@@ -48,7 +44,9 @@ export function FixedHeader({ activeTab, operatorName, onMenuPress }: Props) {
             <Text style={styles.pageTitle} numberOfLines={1}>
               {TAB_TITLES[activeTab]}
             </Text>
-            <Text style={styles.brand}>MonoScrum Kiosk</Text>
+            <Text style={styles.brand}>
+              {regionName ? `📍 ${regionName}` : 'MonoScrum Kiosk'}
+            </Text>
           </View>
         </View>
 
@@ -63,3 +61,4 @@ export function FixedHeader({ activeTab, operatorName, onMenuPress }: Props) {
     </View>
   );
 }
+

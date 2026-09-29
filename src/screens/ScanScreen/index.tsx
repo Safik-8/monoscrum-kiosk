@@ -8,18 +8,23 @@ import {
   Dimensions,
   TouchableOpacity,
   ScrollView,
+  Modal,
+  Animated,
+  Platform,
 } from 'react-native';
-import { Camera, useCameraDevice, useFrameProcessor } from 'react-native-vision-camera';
-import { useFaceDetector } from 'react-native-vision-camera-face-detector';
-import { Worklets } from 'react-native-worklets-core';
+import { CameraView } from 'expo-camera';
 import { Canvas, Path, Paint, Skia } from '@shopify/react-native-skia';
 import { Colors } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { API_URL } from '../../constants/config';
+import { fetchWithTimeout, parseResponse } from '../../lib/http';
+import { Session } from '../../types';
 
 const { width } = Dimensions.get('window');
 const SCANNER_SIZE = width * 0.8;
 
 interface Props {
+  session?: Session | null;
   hasCameraPermission: boolean;
   requestCameraPermission: () => Promise<boolean>;
   busy: boolean;
@@ -27,10 +32,11 @@ interface Props {
   capturedImage?: string | null;
   scanResult?: any;
   onClearScanResult?: () => void;
-  onScan: (ref: React.RefObject<Camera | null>) => void;
+  onScan: (ref: React.RefObject<CameraView | null>) => void;
 }
 
 export function ScanScreen({
+  session,
   hasCameraPermission,
   requestCameraPermission,
   busy,
@@ -40,37 +46,50 @@ export function ScanScreen({
   onClearScanResult,
   onScan,
 }: Props) {
-  const cameraRef = useRef<Camera>(null);
-  const device = useCameraDevice('front');
+  const cameraRef = useRef<CameraView>(null);
+  const [stats, setStats] = useState<any>(null);
+  const successAnim = useRef(new Animated.Value(0)).current;
 
-  const [faces, setFaces] = useState<any[]>([]);
+  useEffect(() => {
+    if (scanResult && scanResult.match) {
+      Animated.sequence([
+        Animated.timing(successAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+        Animated.delay(4000),
+        Animated.timing(successAnim, { toValue: 0, duration: 400, useNativeDriver: true })
+      ]).start();
+    }
+  }, [scanResult]);
 
-  const { detectFaces } = useFaceDetector({
-    performanceMode: 'fast',
-    contourMode: 'all',
-    landmarkMode: 'none',
-  });
+  useEffect(() => {
+    if (session?.accessToken && !scanResult) {
+      fetchBranchStats();
+    }
+  }, [session, scanResult]);
 
-  const setFacesOnJS = Worklets.createRunOnJS((detectedFaces: any[]) => {
-    setFaces(detectedFaces);
-  });
-
-  const frameProcessor = useFrameProcessor((frame) => {
-    'worklet';
-    const detectedFaces = detectFaces(frame);
-    setFacesOnJS(detectedFaces);
-  }, [detectFaces]);
+  const fetchBranchStats = async () => {
+    try {
+      const response = await fetchWithTimeout(`${API_URL}/kiosk/branch-stats`, {
+        headers: { Authorization: `Bearer ${session?.accessToken}` }
+      });
+      const data = await parseResponse(response);
+      if (data.success) {
+        setStats(data.stats);
+      }
+    } catch (err) {
+      console.log('Failed to fetch branch stats', err);
+    }
+  };
 
   // ── Auto-Capture Logic ──────────────────────────────────────────────────
   useEffect(() => {
-    // Basic alignment check based on face array
-    const isFaceAligned = faces.length === 1 && faces[0].bounds.width > 150;
-    
-    // If not busy, no result is shown, camera ready, and face is aligned
-    if (!busy && !scanResult && !error && isFaceAligned && hasCameraPermission && !capturedImage) {
-      onScan(cameraRef);
+    let timer: NodeJS.Timeout;
+    if (!busy && !scanResult && !error && hasCameraPermission && !capturedImage) {
+      timer = setTimeout(() => {
+        onScan(cameraRef);
+      }, 3000);
     }
-  }, [busy, scanResult, error, faces, hasCameraPermission, onScan, capturedImage]);
+    return () => clearTimeout(timer);
+  }, [busy, scanResult, error, hasCameraPermission, onScan, capturedImage]);
 
   // If there's an error, dismiss it quickly to resume scanning
   useEffect(() => {
@@ -93,36 +112,8 @@ export function ScanScreen({
   }, [scanResult, onClearScanResult]);
 
   const getContoursPath = () => {
-    const path = Skia.Path.Make();
-    if (faces.length > 0) {
-      const face = faces[0];
-      const contours = face.contours;
-      if (contours) {
-        // Draw Face Oval
-        if (contours.FACE) {
-          path.moveTo(contours.FACE[0].x, contours.FACE[0].y);
-          contours.FACE.forEach((p: any) => path.lineTo(p.x, p.y));
-          path.close();
-        }
-        
-        const features = [
-          'LEFT_EYEBROW_TOP', 'LEFT_EYEBROW_BOTTOM',
-          'RIGHT_EYEBROW_TOP', 'RIGHT_EYEBROW_BOTTOM',
-          'LEFT_EYE', 'RIGHT_EYE',
-          'UPPER_LIP_TOP', 'UPPER_LIP_BOTTOM',
-          'LOWER_LIP_TOP', 'LOWER_LIP_BOTTOM',
-          'NOSE_BRIDGE', 'NOSE_BOTTOM'
-        ];
-        
-        features.forEach((feature) => {
-          if (contours[feature]) {
-            path.moveTo(contours[feature][0].x, contours[feature][0].y);
-            contours[feature].forEach((p: any) => path.lineTo(p.x, p.y));
-          }
-        });
-      }
-    }
-    return path;
+    if (Platform.OS === 'web' || !Skia || !Skia.Path) return null as any;
+    return Skia.Path.Make();
   };
 
   if (!hasCameraPermission) {
@@ -138,10 +129,6 @@ export function ScanScreen({
     );
   }
 
-  if (device == null) {
-    return <View style={styles.container} />;
-  }
-
   return (
     <View style={styles.container}>
       <View style={styles.hudContainer}>
@@ -153,18 +140,14 @@ export function ScanScreen({
             {capturedImage ? (
               <Image source={{ uri: capturedImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
             ) : (
-              <Camera
+              <CameraView
                 ref={cameraRef}
                 style={StyleSheet.absoluteFill}
-                device={device}
-                isActive={!busy && !scanResult && !capturedImage}
-                frameProcessor={frameProcessor}
-                pixelFormat="yuv"
-                photo={true}
+                facing="front"
               />
             )}
 
-            {!capturedImage && !scanResult && (
+            {!capturedImage && !scanResult && Platform.OS !== 'web' && (
               <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
                 <Path path={getContoursPath()} color="cyan" style="stroke" strokeWidth={1}>
                   <Paint style="stroke" strokeWidth={1.5} color="rgba(0, 255, 255, 0.6)" />
@@ -187,26 +170,22 @@ export function ScanScreen({
         </View>
         <View style={[styles.statsContainer, { marginTop: -10 }]}>
           <View style={styles.statBoxLeft}>
-            <Text style={styles.statLabel}>DEPTH MAP</Text>
-            <Text style={styles.statValue}>[VALID]</Text>
+            <Text style={styles.statLabel}>CHECKED IN</Text>
+            <Text style={styles.statValue}>[{stats ? stats.checkedIn : '...'}/{stats ? stats.totalEmployees : '...'}]</Text>
           </View>
           <View style={styles.statBoxRight}>
-            <Text style={styles.statLabel}>HEAT SIGNATURE</Text>
-            <Text style={styles.statValue}>[OPTIMAL]</Text>
+            <Text style={styles.statLabel}>YET TO ARRIVE</Text>
+            <Text style={styles.statValue}>[{stats ? stats.notYetIn : '...'}]</Text>
           </View>
         </View>
 
         <Text style={styles.confidenceScore}>
-          {busy ? 'ANALYZING...' : (scanResult ? 'CONFIDENCE SCORE: 99.8%' : 'WAITING FOR FACE...')}
+          {busy ? 'ANALYZING...' : (scanResult ? `CONFIDENCE SCORE: ${(scanResult.confidence * 100).toFixed(1)}%` : 'WAITING FOR FACE...')}
         </Text>
 
-        {error ? (
-          <Text style={[styles.statusVerified, { color: 'red' }]}>⚠ {error}</Text>
-        ) : (
-          <Text style={styles.statusVerified}>
-            {scanResult ? '[Status: Verified]' : '[Status: Scanning]'}
-          </Text>
-        )}
+        <Text style={styles.statusVerified}>
+          {scanResult ? '[Status: Verified]' : '[Status: Scanning]'}
+        </Text>
 
         <Text style={styles.syncText}>
           {scanResult ? '✅ CRYPTOGRAPHIC KEY SYNC ✅' : 'CRYPTOGRAPHIC KEY SYNC'}
@@ -219,19 +198,42 @@ export function ScanScreen({
           {busy ? 'AUTHENTICATING FOR TRANSACTION...' : 'POSITION FACE IN RING'}
         </Text>
 
-        {/* Existing Result UI Overlay within HUD if matched */}
-        {scanResult && (
-          <View style={styles.miniResultBox}>
-            <Text style={styles.resultName}>{scanResult.user?.fullName || 'Unknown User'}</Text>
-            <Text style={styles.resultStatus}>
-              {scanResult.attendance?.status === 'PRESENT' ? 'CHECKED IN' : 'CHECKED OUT'}
-            </Text>
-            <TouchableOpacity onPress={onClearScanResult}>
-              <Text style={styles.pinLink}>Dismiss</Text>
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
+
+      {/* Success Modal */}
+      <Modal visible={!!scanResult} transparent animationType="fade">
+        <View style={styles.modalBg}>
+          <Animated.View style={[styles.modalContent, { borderColor: '#00ff88', opacity: successAnim, transform: [{ scale: successAnim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) }] }]}>
+            <Ionicons name="checkmark-circle" size={60} color="#00ff88" style={{ marginBottom: 10 }} />
+            <Text style={styles.resultName}>{scanResult?.user?.fullName || 'Unknown User'}</Text>
+            {scanResult?.user?.department && (
+              <Text style={styles.resultDept}>{scanResult.user.designation?.title || 'Staff'} • {scanResult.user.department?.name || 'Dept'}</Text>
+            )}
+            <Text style={styles.resultStatus}>
+              {scanResult?.attendance?.status === 'PRESENT' ? '✅ CHECKED IN' : '👋 CHECKED OUT'}
+            </Text>
+            <Text style={{ color: '#00ff88', marginTop: 10, fontSize: 16, fontWeight: 'bold' }}>User Verified Successfully</Text>
+            <TouchableOpacity onPress={onClearScanResult} style={styles.dismissBtn}>
+              <Text style={styles.dismissBtnText}>Dismiss</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </Modal>
+
+      {/* Error Modal */}
+      <Modal visible={!!error} transparent animationType="fade">
+        <View style={styles.modalBg}>
+          <View style={styles.modalContent}>
+            <Ionicons name="warning" size={50} color="#ff3333" />
+            <Text style={styles.modalTitle}>Face Not Recognized</Text>
+            <Text style={styles.modalDesc}>{error}</Text>
+            <TouchableOpacity style={styles.modalBtn} onPress={onClearScanResult}>
+              <Text style={styles.modalBtnText}>Try Again</Text>
+            </TouchableOpacity>
+            <Text style={styles.modalSubText}>If the user is not found, please go to the 'Enroll' tab to register them.</Text>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -312,6 +314,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%'
   },
-  resultName: { color: 'white', fontSize: 18, fontWeight: 'bold' },
-  resultStatus: { color: '#00ff88', fontSize: 14, marginTop: 5, fontWeight: 'bold' },
+  resultName: { color: 'white', fontSize: 20, fontWeight: 'bold' },
+  resultDept: { color: '#8b9bb4', fontSize: 14, marginTop: 4 },
+  resultStatus: { color: '#00ff88', fontSize: 16, marginTop: 8, fontWeight: 'bold' },
+  dismissBtn: { marginTop: 15, paddingVertical: 8, paddingHorizontal: 20, backgroundColor: 'rgba(0,255,136,0.2)', borderRadius: 20, borderWidth: 1, borderColor: '#00ff88' },
+  dismissBtnText: { color: '#00ff88', fontSize: 14, fontWeight: 'bold' },
+  modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { width: '80%', backgroundColor: '#0f1928', padding: 25, borderRadius: 20, alignItems: 'center', borderWidth: 1, borderColor: '#ff3333' },
+  modalTitle: { color: '#ffffff', fontSize: 22, fontWeight: 'bold', marginTop: 15, marginBottom: 10 },
+  modalDesc: { color: '#8b9bb4', fontSize: 15, textAlign: 'center', marginBottom: 20 },
+  modalBtn: { backgroundColor: '#ff3333', paddingVertical: 12, paddingHorizontal: 30, borderRadius: 25 },
+  modalBtnText: { color: '#ffffff', fontSize: 16, fontWeight: 'bold' },
+  modalSubText: { color: '#5b98a3', fontSize: 12, textAlign: 'center', marginTop: 15 },
 });

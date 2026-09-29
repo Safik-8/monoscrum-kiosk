@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Alert } from 'react-native';
 import * as Location from 'expo-location';
-import type { Camera } from 'react-native-vision-camera';
+import type { CameraView } from 'expo-camera';
 import { API_URL, REFRESH_TOKEN_KEY } from '../constants/config';
 import { getDeviceId } from '../lib/deviceId';
 import { tokenStore } from '../lib/tokenStore';
@@ -20,7 +20,7 @@ interface UseAuthReturn {
   restoreSession: () => Promise<void>;
   login: () => Promise<void>;
   logout: () => Promise<void>;
-  scanFace: (cameraRef: React.RefObject<Camera | null>) => Promise<void>;
+  scanFace: (cameraRef: React.RefObject<CameraView | null>) => Promise<void>;
   scanResult: any;
   clearScanResult: () => void;
   kioskLocation: { latitude: number; longitude: number } | null;
@@ -55,6 +55,19 @@ export function useAuth(): UseAuthReturn {
     }
   }
 
+  /** Build session object from API response data */
+  function buildSession(data: any, deviceId: string): Session {
+    return {
+      accessToken: data.token,
+      deviceId,
+      operatorName: data.data?.user?.name,
+      regionId: data.data?.user?.regionId,
+      regionName: data.data?.user?.regionName,
+      organizationId: data.data?.user?.organizationId,
+      organizationName: data.data?.user?.organizationName,
+    };
+  }
+
   async function restoreSession() {
     try {
       const refreshToken = await tokenStore.get(REFRESH_TOKEN_KEY);
@@ -72,7 +85,7 @@ export function useAuth(): UseAuthReturn {
       if (!data.token || !data.refreshToken) throw new Error('Invalid refresh response.');
 
       await tokenStore.set(REFRESH_TOKEN_KEY, data.refreshToken);
-      setSession({ accessToken: data.token, deviceId, operatorName: data.data?.user?.name });
+      setSession(buildSession(data, deviceId));
       await checkExistingLocation();
       setAppScreen('main');
     } catch {
@@ -97,7 +110,7 @@ export function useAuth(): UseAuthReturn {
       }
 
       await tokenStore.set(REFRESH_TOKEN_KEY, data.refreshToken);
-      setSession({ accessToken: data.token, deviceId, operatorName: data.data?.user?.name });
+      setSession(buildSession(data, deviceId));
       setPassword('');
       await checkExistingLocation();
       setAppScreen('main');
@@ -129,43 +142,20 @@ export function useAuth(): UseAuthReturn {
     }
   }
 
-  async function scanFace(cameraRef: React.RefObject<Camera | null>) {
+  async function scanFace(cameraRef: React.RefObject<CameraView | null>) {
     if (!cameraRef.current || !session || busy) return;
     setBusy(true);
     setError('');
     try {
-      const photo = await cameraRef.current.takePhoto({
-        qualityPrioritization: 'speed',
-        enableShutterSound: false
+      const photo = await cameraRef.current.takePictureAsync({
+        base64: true,
+        quality: 0.3, // Optimized: lower quality = faster upload, still sufficient for face recognition
       });
       
-      if (!photo) throw new Error('Unable to capture camera image.');
+      if (!photo || !photo.base64) throw new Error('Unable to capture camera image.');
       
-      // Vision Camera saves photo to file system. We need to convert it or pass the path.
-      // Usually, backend takes base64. Let's assume we can fetch it, or if backend handles multipart, we can upload it.
-      // For now, let's use fetch to read the local file to base64 or upload it as form data.
-      
-      const fileUri = `file://${photo.path}`;
-      setCapturedImage(fileUri);
-
-      // We have to convert local file to base64 to send it to the backend endpoint which expects JSON
-      // Or we can modify to send FormData. For now, fetch and convert.
-      const responseFile = await fetch(fileUri);
-      const blob = await responseFile.blob();
-      const reader = new FileReader();
-      
-      const base64Promise = new Promise<string>((resolve, reject) => {
-        reader.onload = () => {
-          const result = reader.result as string;
-          // Extract just the base64 part
-          const base64 = result.split(',')[1];
-          resolve(base64);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-
-      const base64Data = await base64Promise;
+      setCapturedImage(photo.uri);
+      const base64Data = photo.base64;
 
       const response = await fetchWithTimeout(`${API_URL}/kiosk/attendance/scan`, {
         method: 'POST',
@@ -178,7 +168,7 @@ export function useAuth(): UseAuthReturn {
           deviceId: session.deviceId,
           location: kioskLocation 
         }),
-      });
+      }, 15_000); // 15s timeout for face recognition pipeline
       const result = await parseResponse(response);
       setScanResult(result);
     } catch (err) {

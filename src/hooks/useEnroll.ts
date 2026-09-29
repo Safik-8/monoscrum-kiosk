@@ -9,6 +9,7 @@ export interface User {
   name: string;
   username: string;
   profilePicture?: string;
+  isFaceEnrolled?: boolean;
 }
 
 export function useEnroll(session: Session | null) {

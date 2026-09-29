@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable, Animated, SafeAreaView } from 'react-native';
+import { View, Text, Pressable, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTab, Session } from '../../types';
 import { Colors } from '../../constants/theme';
@@ -53,7 +53,7 @@ export function DrawerMenu({
 
       {/* Sliding panel */}
       <Animated.View style={[styles.drawer, { transform: [{ translateX: slideAnim }] }]}>
-        <SafeAreaView style={styles.inner}>
+        <View style={styles.inner}>
 
           {/* Header — Logo + brand + close */}
           <View style={styles.header}>
@@ -124,7 +124,7 @@ export function DrawerMenu({
             </Pressable>
             <Text style={styles.versionText}>MonoScrum Kiosk v2.0</Text>
           </View>
-        </SafeAreaView>
+        </View>
       </Animated.View>
     </View>
   );

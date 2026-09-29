@@ -2,6 +2,10 @@ export type Session = {
   accessToken: string;
   deviceId: string;
   operatorName?: string;
+  regionId?: string;
+  regionName?: string;
+  organizationId?: string;
+  organizationName?: string;
 };
 
 export type AppScreen = 'loading' | 'login' | 'main';
@@ -14,6 +18,12 @@ export type AuthResponse = {
   refreshToken?: string;
   message?: string;
   data?: {
-    user?: { name?: string };
+    user?: { 
+      name?: string;
+      regionId?: string;
+      regionName?: string;
+      organizationId?: string;
+      organizationName?: string;
+    };
   };
 };
