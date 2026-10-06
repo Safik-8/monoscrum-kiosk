@@ -2,7 +2,7 @@ import { useCameraPermissions } from 'expo-camera';
 import * as KeepAwake from 'expo-keep-awake';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
+import { View, StyleSheet, Platform, BackHandler } from 'react-native';
 
 // Hooks
 import { useAuth } from './src/hooks/useAuth';
@@ -31,7 +31,7 @@ import { BottomTab } from './src/types';
 export default function App() {
   const auth = useAuth();
   const drawer = useDrawer();
-  const [activeTab, setActiveTab] = useState<BottomTab>('scan');
+  const [activeTab, setActiveTab] = useState<BottomTab>('new');
 
   const [permission, requestCameraPermission] = useCameraPermissions();
   const hasCameraPermission = permission?.granted ?? false;
@@ -56,6 +56,23 @@ export default function App() {
   useEffect(() => {
     void auth.restoreSession();
   }, []);
+
+  // Handle hardware back button to simulate tab navigation history
+  useEffect(() => {
+    const onBackPress = () => {
+      // If we are logged in and not on the default 'new' tab, navigate back to 'new'
+      if (auth.appScreen === 'main' && activeTab !== 'new') {
+        setActiveTab('new');
+        return true; // prevent default behavior (app exit)
+      }
+      return false; // allow default behavior (app exit)
+    };
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => {
+      subscription.remove();
+    };
+  }, [auth.appScreen, activeTab]);
 
   // ── Loading ────────────────────────────────────────────────────────────────
   if (auth.appScreen === 'loading') {

@@ -1,7 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import * as Location from 'expo-location';
-import type { CameraView } from 'expo-camera';
 import { API_URL, REFRESH_TOKEN_KEY } from '../constants/config';
 import { getDeviceId } from '../lib/deviceId';
 import { tokenStore } from '../lib/tokenStore';
@@ -20,7 +19,7 @@ interface UseAuthReturn {
   restoreSession: () => Promise<void>;
   login: () => Promise<void>;
   logout: () => Promise<void>;
-  scanFace: (cameraRef: React.RefObject<CameraView | null>) => Promise<void>;
+  scanFace: (photoOutput: any) => Promise<void>;
   scanResult: any;
   clearScanResult: () => void;
   kioskLocation: { latitude: number; longitude: number } | null;
@@ -38,6 +37,37 @@ export function useAuth(): UseAuthReturn {
   const [kioskLocation, setKioskLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+
+  // Proactively refresh token every 10 minutes to prevent JWT expiration
+  useEffect(() => {
+    if (!session?.accessToken || appScreen !== 'main') return;
+    
+    const interval = setInterval(() => {
+      const bgRefresh = async () => {
+        try {
+          const refreshToken = await tokenStore.get(REFRESH_TOKEN_KEY);
+          if (!refreshToken) return;
+          const deviceId = await getDeviceId();
+          const response = await fetchWithTimeout(`${API_URL}/auth/refresh-token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ platform: 'mobile', deviceId, refreshToken }),
+          });
+          const data = await parseResponse(response);
+          if (data.token && data.refreshToken) {
+            await tokenStore.set(REFRESH_TOKEN_KEY, data.refreshToken);
+            setSession(prev => prev ? { ...prev, accessToken: data.token } : null);
+            console.log('Token refreshed in background');
+          }
+        } catch (e) {
+          console.log('Background token refresh failed:', e);
+        }
+      };
+      void bgRefresh();
+    }, 10 * 60 * 1000); // 10 minutes
+
+    return () => clearInterval(interval);
+  }, [session?.accessToken, appScreen]);
 
   async function checkExistingLocation() {
     try {
@@ -142,21 +172,54 @@ export function useAuth(): UseAuthReturn {
     }
   }
 
-  async function scanFace(cameraRef: React.RefObject<CameraView | null>) {
-    if (!cameraRef.current || !session || busy) return;
+  async function scanFace(photoOutput: any) {
+    if (!photoOutput || !session || busy) {
+      console.log(`[useAuth] scanFace aborted. photoOutput: ${!!photoOutput}, session: ${!!session}, busy: ${busy}`);
+      return;
+    }
     setBusy(true);
     setError('');
+    console.log('[useAuth] Initiating scanFace...');
     try {
-      const photo = await cameraRef.current.takePictureAsync({
-        base64: true,
-        quality: 0.3, // Optimized: lower quality = faster upload, still sufficient for face recognition
+      // Vision Camera v5 uses photoOutput.takePhoto()
+      console.log('[useAuth] Taking photo with camera...');
+      const photo = await photoOutput.takePhoto({
+        qualityPrioritization: 'speed',
       });
       
-      if (!photo || !photo.base64) throw new Error('Unable to capture camera image.');
+      if (!photo || !photo.path) throw new Error('Unable to capture camera image.');
       
-      setCapturedImage(photo.uri);
-      const base64Data = photo.base64;
+      // Vision Camera returns a file path, not base64 directly.
+      // We need to read the file and convert to base64.
+      const photoUri = `file://${photo.path}`;
+      setCapturedImage(photoUri);
+      console.log(`[useAuth] Photo taken successfully: ${photoUri}`);
 
+      console.log('[useAuth] Converting photo to Base64...');
+      // Fetch the photo as base64 via XMLHttpRequest (safer than fetch().blob() in RN)
+      const base64Data = await new Promise<string>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.onload = function() {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const result = reader.result as string;
+            // Strip the data:image/...;base64, prefix
+            const base64 = result.split(',')[1];
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(xhr.response);
+        };
+        xhr.onerror = function() {
+          reject(new Error('Failed to read file as blob'));
+        };
+        xhr.responseType = 'blob';
+        xhr.open('GET', photoUri, true);
+        xhr.send(null);
+      });
+      console.log(`[useAuth] Base64 conversion successful. Length: ${base64Data.length}`);
+
+      console.log(`[useAuth] Sending POST request to ${API_URL}/kiosk/attendance/scan...`);
       const response = await fetchWithTimeout(`${API_URL}/kiosk/attendance/scan`, {
         method: 'POST',
         headers: {
@@ -169,11 +232,16 @@ export function useAuth(): UseAuthReturn {
           location: kioskLocation 
         }),
       }, 15_000); // 15s timeout for face recognition pipeline
+      
+      console.log(`[useAuth] Received API response with status: ${response.status}`);
       const result = await parseResponse(response);
+      console.log('[useAuth] API parseResponse result:', JSON.stringify(result, null, 2));
       setScanResult(result);
     } catch (err) {
+      console.log('[useAuth] Face scan error caught:', err);
       setError(err instanceof Error ? err.message : 'Face scan failed.');
     } finally {
+      console.log('[useAuth] scanFace process finished.');
       setBusy(false);
       setCapturedImage(null);
     }

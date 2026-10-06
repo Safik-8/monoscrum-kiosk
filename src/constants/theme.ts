@@ -16,6 +16,8 @@ export const Colors = {
   green: '#16A34A',
   greenGlow: 'rgba(22,163,74,0.2)',
   red: '#DC2626',
+  success: '#16A34A',
+  warning: '#F59E0B',
 
   // Text
   text: '#0D1B3E',

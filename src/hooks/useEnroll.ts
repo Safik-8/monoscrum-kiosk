@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { CameraView } from 'expo-camera';
 import { API_URL } from '../constants/config';
 import { fetchWithTimeout, parseResponse } from '../lib/http';
 import { Session } from '../types';
@@ -35,7 +34,7 @@ export function useEnroll(session: Session | null) {
         headers: { Authorization: `Bearer ${session?.accessToken}` }
       });
       const result = await parseResponse(response);
-      setUsers(result.data || []);
+      setUsers((result as any).data || []);
     } catch (err) {
       setError('Failed to fetch users');
       console.error(err);
@@ -49,7 +48,7 @@ export function useEnroll(session: Session | null) {
     u.username?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const captureAndEnroll = async (cameraRef: React.RefObject<CameraView | null>) => {
+  const captureAndEnroll = async (cameraRef: React.RefObject<any>) => {
     if (!cameraRef.current || !selectedUser || busy) return;
     
     try {
@@ -57,10 +56,25 @@ export function useEnroll(session: Session | null) {
       setError('');
       setSuccess(false);
       
-      const image = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.65 });
-      if (!image?.base64) throw new Error('Unable to capture camera image.');
+      // Vision Camera v5 uses takePhoto()
+      const photo = await cameraRef.current.takePhoto({ qualityPrioritization: 'speed' });
+      if (!photo?.path) throw new Error('Unable to capture camera image.');
       
-      const b64 = `data:image/jpeg;base64,${image.base64}`;
+      // Convert file to base64
+      const photoUri = `file://${photo.path}`;
+      const fileResponse = await fetch(photoUri);
+      const blob = await fileResponse.blob();
+      const base64Str = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const res = reader.result as string;
+          resolve(res.split(',')[1]);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      
+      const b64 = `data:image/jpeg;base64,${base64Str}`;
       setCapturedImage(b64);
 
       const response = await fetchWithTimeout(`${API_URL}/kiosk/enroll`, {
@@ -69,11 +83,11 @@ export function useEnroll(session: Session | null) {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session?.accessToken}`,
         },
-        body: JSON.stringify({ userId: selectedUser._id, imageBase64: image.base64 }),
+        body: JSON.stringify({ userId: selectedUser._id, imageBase64: base64Str }),
       });
       
       const result = await parseResponse(response);
-      if (result.success) {
+      if ((result as any).success) {
         setSuccess(true);
         setTimeout(() => {
           // Reset after success

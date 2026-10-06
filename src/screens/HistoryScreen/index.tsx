@@ -21,6 +21,8 @@ export function HistoryScreen({ session }: Props) {
     targetDate,
     changeDate,
     historyResult,
+    branchHistory,
+    refreshBranchHistory,
     busy,
   } = useHistory(session);
 
@@ -94,6 +96,57 @@ export function HistoryScreen({ session }: Props) {
                 )}
               </ScrollView>
             )}
+
+            {/* Branch History List */}
+            <View style={styles.branchHistoryContainer}>
+              <View style={styles.branchHistoryHeaderRow}>
+                <Text style={styles.branchHistoryTitle}>Today's Scans</Text>
+                <Pressable onPress={refreshBranchHistory}>
+                  <Ionicons name="refresh" size={20} color={Colors.accent} />
+                </Pressable>
+              </View>
+
+              {!branchHistory.length && !busy ? (
+                <View style={styles.emptyBranchState}>
+                  <Ionicons name="finger-print-outline" size={48} color={Colors.border} />
+                  <Text style={styles.emptyBranchText}>No scans recorded yet today.</Text>
+                </View>
+              ) : (
+                branchHistory.map((record) => (
+                  <Pressable 
+                    key={record.id} 
+                    style={styles.branchHistoryCard}
+                    onPress={() => {
+                      const userObj = users.find(u => u._id === record.employeeId);
+                      if (userObj) handleSelectUser(userObj);
+                    }}
+                  >
+                    <View style={styles.branchUserAvatar}>
+                      {record.profileImage ? (
+                        <Image source={{ uri: record.profileImage }} style={{ width: 44, height: 44, borderRadius: 22 }} />
+                      ) : (
+                        <Text style={styles.userInitials}>{getInitials(record.name)}</Text>
+                      )}
+                    </View>
+                    <View style={styles.branchUserDetails}>
+                      <Text style={styles.branchUserName}>{record.name}</Text>
+                      <View style={styles.branchStatusRow}>
+                        <View style={[styles.statusDot, { backgroundColor: record.status === 'PRESENT' ? Colors.success : Colors.warning }]} />
+                        <Text style={styles.branchStatusText}>
+                          {record.status === 'PRESENT' ? 'Checked In' : 'Checked Out'}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.branchTimeDetails}>
+                      <Text style={styles.branchTimeLabel}>In: {record.checkIn ? new Date(record.checkIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}</Text>
+                      {record.checkOut && (
+                        <Text style={styles.branchTimeLabel}>Out: {new Date(record.checkOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+                      )}
+                    </View>
+                  </Pressable>
+                ))
+              )}
+            </View>
           </View>
         ) : (
           <View style={styles.selectedUserCard}>

@@ -13,7 +13,8 @@ export const styles = StyleSheet.create({
   hero: {
     backgroundColor: Colors.surface,
     borderRadius: 20,
-    padding: 28,
+    padding: 20,
+    flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: Colors.border,
@@ -111,7 +112,7 @@ export const styles = StyleSheet.create({
   enrollTarget: {
     backgroundColor: 'rgba(0,0,0,0.5)',
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 11,
     borderRadius: 20,
   },
   enrollTargetText: {
@@ -139,7 +140,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   toastOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...(StyleSheet.absoluteFill as any),
     backgroundColor: 'rgba(0,0,0,0.7)',
     alignItems: 'center',
     justifyContent: 'center',

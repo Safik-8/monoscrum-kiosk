@@ -20,6 +20,7 @@ export function useHistory(session: Session | null) {
   const [historyResult, setHistoryResult] = useState<any>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [branchHistory, setBranchHistory] = useState<any[]>([]);
 
   // 1. Fetch Users List
   const fetchUsers = async () => {
@@ -31,7 +32,7 @@ export function useHistory(session: Session | null) {
         headers: { Authorization: `Bearer ${session.accessToken}` }
       });
       const data = await parseResponse(response);
-      setUsers(data.data || []);
+      setUsers((data as any).data || []);
       setError('');
     } catch (err: any) {
       setError(err.message || 'Failed to fetch users');
@@ -45,6 +46,33 @@ export function useHistory(session: Session | null) {
       fetchUsers();
     }
   }, [session]);
+
+  const fetchBranchHistory = async () => {
+    if (!session?.accessToken) return;
+    setBusy(true);
+    try {
+      const response = await fetchWithTimeout(`${API_URL}/kiosk/branch-history`, {
+        headers: { Authorization: `Bearer ${session.accessToken}` }
+      });
+      const data = await parseResponse(response);
+      setBranchHistory((data as any).data || []);
+      setError('');
+    } catch (err: any) {
+      console.log('Branch History Error:', err);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    if (session?.accessToken && !selectedUser) {
+      fetchBranchHistory();
+      
+      // Auto-refresh every 30 seconds
+      const interval = setInterval(fetchBranchHistory, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [session, selectedUser]);
 
   // 2. Fetch History when user or date changes
   const fetchHistory = async () => {
@@ -92,8 +120,10 @@ export function useHistory(session: Session | null) {
     changeDate,
     setDate,
     historyResult,
+    branchHistory,
     busy,
     error,
-    refresh: fetchHistory
+    refresh: fetchHistory,
+    refreshBranchHistory: fetchBranchHistory
   };
 }

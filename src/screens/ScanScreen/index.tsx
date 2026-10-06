@@ -12,7 +12,8 @@ import {
   Animated,
   Platform,
 } from 'react-native';
-import { CameraView } from 'expo-camera';
+import { Camera, useCameraDevice, usePhotoOutput } from 'react-native-vision-camera';
+import { useFaceDetector } from '@noma4i/vision-camera-face-detector';
 import { Canvas, Path, Paint, Skia } from '@shopify/react-native-skia';
 import { Colors } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,13 +27,13 @@ const SCANNER_SIZE = width * 0.8;
 interface Props {
   session?: Session | null;
   hasCameraPermission: boolean;
-  requestCameraPermission: () => Promise<boolean>;
+  requestCameraPermission: () => Promise<any>;
   busy: boolean;
   error: string;
   capturedImage?: string | null;
   scanResult?: any;
   onClearScanResult?: () => void;
-  onScan: (ref: React.RefObject<CameraView | null>) => void;
+  onScan: (photoOutput: any) => void;
 }
 
 export function ScanScreen({
@@ -46,12 +47,67 @@ export function ScanScreen({
   onClearScanResult,
   onScan,
 }: Props) {
-  const cameraRef = useRef<CameraView>(null);
   const [stats, setStats] = useState<any>(null);
   const successAnim = useRef(new Animated.Value(0)).current;
+  
+  // Scan gating: only scan once per face-enter cycle
+  // "waitingForFaceLeave" means we already scanned and are waiting for the 
+  // person to step away before we scan again
+  const waitingForFaceLeaveRef = useRef(false);
+  const scanInProgressRef = useRef(false);
+
+  // Vision Camera Setup
+  const device = useCameraDevice('front');
+  const photo = usePhotoOutput({ qualityPrioritization: 'speed' });
+  
+  // V5 Compatible Face Detector DSL
+  const faceDetector = useFaceDetector({
+    preset: 'fast',
+    fps: 5,
+    outputs: photo,
+  });
+
+  const [isCameraInitialized, setIsCameraInitialized] = useState(false);
+
+  const hasFaces = faceDetector.result.faces && faceDetector.result.faces.length > 0;
+
+  // Add a ref to avoid spamming the "Face detected" log on every frame
+  const lastHasFacesRef = useRef(false);
+
+  useEffect(() => {
+    if (hasFaces !== lastHasFacesRef.current) {
+      console.log(`[ScanScreen] Face detection state changed: hasFaces=${hasFaces} (Total faces: ${faceDetector.result.faces?.length || 0})`);
+      lastHasFacesRef.current = hasFaces;
+    }
+
+    if (!hasFaces) {
+      // Face left the frame → reset the gate so the next face triggers a scan
+      waitingForFaceLeaveRef.current = false;
+    }
+
+    if (isCameraInitialized && hasFaces && !waitingForFaceLeaveRef.current && !scanInProgressRef.current 
+        && !busy && !scanResult && !error && !capturedImage) {
+      console.log('[ScanScreen] Valid face detected and all conditions met. Triggering onScan()...');
+      // A new face just entered → scan once
+      waitingForFaceLeaveRef.current = true;
+      scanInProgressRef.current = true;
+      onScan(photo);
+    } else if (hasFaces && !waitingForFaceLeaveRef.current && !scanInProgressRef.current) {
+      // Log why it might not be scanning if it sees a face
+      // console.log('[ScanScreen] Face seen, but waiting on conditions:', { isCameraInitialized, busy, hasScanResult: !!scanResult, hasError: !!error, hasCapturedImage: !!capturedImage });
+    }
+  }, [isCameraInitialized, hasFaces, busy, scanResult, error, capturedImage, photo, faceDetector.result]);
+
+  // Reset in-progress flag when busy finishes
+  useEffect(() => {
+    if (!busy) {
+      scanInProgressRef.current = false;
+    }
+  }, [busy]);
 
   useEffect(() => {
     if (scanResult && scanResult.match) {
+      console.log(`[ScanScreen] Scan successful! Match confidence: ${scanResult.confidence}`);
       Animated.sequence([
         Animated.timing(successAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
         Animated.delay(4000),
@@ -72,34 +128,31 @@ export function ScanScreen({
         headers: { Authorization: `Bearer ${session?.accessToken}` }
       });
       const data = await parseResponse(response);
-      if (data.success) {
-        setStats(data.stats);
+      if ((data as any).success) {
+        setStats((data as any).stats);
       }
     } catch (err) {
       console.log('Failed to fetch branch stats', err);
     }
   };
 
-  // ── Auto-Capture Logic ──────────────────────────────────────────────────
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (!busy && !scanResult && !error && hasCameraPermission && !capturedImage) {
-      timer = setTimeout(() => {
-        onScan(cameraRef);
-      }, 3000);
-    }
-    return () => clearTimeout(timer);
-  }, [busy, scanResult, error, hasCameraPermission, onScan, capturedImage]);
-
   // If there's an error, dismiss it quickly to resume scanning
   useEffect(() => {
     if (error && onClearScanResult) {
+      console.log(`[ScanScreen] Error displayed to user: ${error}. Clearing in 2.5s...`);
       const timer = setTimeout(() => {
         onClearScanResult(); 
       }, 2500);
       return () => clearTimeout(timer);
     }
   }, [error, onClearScanResult]);
+
+  // Make sure we can scan again if results or errors are cleared
+  useEffect(() => {
+    if (!error && !scanResult) {
+      waitingForFaceLeaveRef.current = false;
+    }
+  }, [error, scanResult]);
 
   // ── Auto-Dismiss Success Screen ───────────────────────────────────────────
   useEffect(() => {
@@ -129,6 +182,8 @@ export function ScanScreen({
     );
   }
 
+  if (device == null) return <View style={styles.container} />;
+
   return (
     <View style={styles.container}>
       <View style={styles.hudContainer}>
@@ -140,10 +195,12 @@ export function ScanScreen({
             {capturedImage ? (
               <Image source={{ uri: capturedImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
             ) : (
-              <CameraView
-                ref={cameraRef}
+              <Camera
+                {...faceDetector.camera}
                 style={StyleSheet.absoluteFill}
-                facing="front"
+                device={device}
+                isActive={!capturedImage && !scanResult && !error}
+                onInitialized={() => setIsCameraInitialized(true)}
               />
             )}
 
@@ -227,7 +284,10 @@ export function ScanScreen({
             <Ionicons name="warning" size={50} color="#ff3333" />
             <Text style={styles.modalTitle}>Face Not Recognized</Text>
             <Text style={styles.modalDesc}>{error}</Text>
-            <TouchableOpacity style={styles.modalBtn} onPress={onClearScanResult}>
+            <TouchableOpacity style={styles.modalBtn} onPress={() => {
+              waitingForFaceLeaveRef.current = false;
+              if (onClearScanResult) onClearScanResult();
+            }}>
               <Text style={styles.modalBtnText}>Try Again</Text>
             </TouchableOpacity>
             <Text style={styles.modalSubText}>If the user is not found, please go to the 'Enroll' tab to register them.</Text>

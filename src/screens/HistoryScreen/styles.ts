@@ -6,7 +6,7 @@ const { width } = Dimensions.get('window');
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: Colors.bg,
   },
   content: {
     padding: 24,
@@ -231,5 +231,85 @@ export const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginTop: 16,
     marginBottom: 16,
+  },
+  
+  // Branch History Styles
+  branchHistoryContainer: {
+    marginTop: 16,
+  },
+  branchHistoryHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  branchHistoryTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  emptyBranchState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  emptyBranchText: {
+    color: Colors.textSub,
+    marginTop: 12,
+    fontSize: 16,
+  },
+  branchHistoryCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: 12,
+  },
+  branchUserAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.surfaceUp,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  branchUserDetails: {
+    flex: 1,
+  },
+  branchUserName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  branchStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  branchStatusText: {
+    fontSize: 14,
+    color: Colors.textSub,
+  },
+  branchTimeDetails: {
+    alignItems: 'flex-end',
+  },
+  branchTimeLabel: {
+    fontSize: 12,
+    color: Colors.textSub,
+    marginTop: 2,
   }
 });
