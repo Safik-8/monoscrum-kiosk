@@ -7,7 +7,7 @@ export const styles = StyleSheet.create({
     backgroundColor: '#000',
   },
   overlayContainer: {
-    ...StyleSheet.absoluteFillObject,
+    ...(StyleSheet.absoluteFill as any),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -149,7 +149,7 @@ export const styles = StyleSheet.create({
     color: Colors.white,
   },
   resultOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...(StyleSheet.absoluteFill as any),
     backgroundColor: 'rgba(0,0,0,0.85)',
     zIndex: 100,
   },

@@ -9,8 +9,9 @@ import { Session } from '../../types';
 
 export function NewScreen({ session }: { session: Session | null }) {
   const [permission, requestPermission] = useCameraPermissions();
-  const cameraRef = useRef<CameraView | null>(null);
+  const cameraRef = useRef<CameraView>(null);
   const [isModalReady, setIsModalReady] = React.useState(false);
+  const [cameraPosition, setCameraPosition] = React.useState<'front' | 'back'>('front');
   
   const {
     users,
@@ -42,7 +43,7 @@ export function NewScreen({ session }: { session: Session | null }) {
   }
 
   // Permission denied UI
-  if (!permission.granted) {
+  if (!permission?.granted) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
         <Ionicons name="camera-outline" size={48} color={Colors.accent} style={{ marginBottom: 16 }} />
@@ -63,9 +64,13 @@ export function NewScreen({ session }: { session: Session | null }) {
       {!selectedUser && (
         <View style={styles.content}>
           <View style={styles.hero}>
-            <Ionicons name="person-add-outline" size={32} color={Colors.accent} style={{ marginBottom: 12 }} />
-            <Text style={styles.heroTitle}>Face Enrollment</Text>
-            <Text style={styles.heroSubtitle}>Select an employee to enroll their face into the Kiosk AI.</Text>
+            <View style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: Colors.accentDim, justifyContent: 'center', alignItems: 'center', marginRight: 16 }}>
+              <Ionicons name="scan-outline" size={28} color={Colors.accent} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.heroTitle}>Face Enrollment</Text>
+              <Text style={styles.heroSubtitle}>Select an employee to enroll their face into the Kiosk AI.</Text>
+            </View>
           </View>
 
           <TextInput
@@ -119,13 +124,18 @@ export function NewScreen({ session }: { session: Session | null }) {
           animationType="slide" 
           transparent={false}
           onShow={() => setIsModalReady(true)}
+          onRequestClose={cancelEnrollment}
         >
           <View style={styles.cameraContainer}>
             {isModalReady && (
               capturedImage ? (
                  <Image source={{ uri: capturedImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
               ) : (
-                 <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="front" mirror />
+                 <CameraView 
+                   ref={cameraRef} 
+                   style={StyleSheet.absoluteFill} 
+                   facing={cameraPosition} 
+                 />
               )
             )}
 
@@ -141,8 +151,14 @@ export function NewScreen({ session }: { session: Session | null }) {
                   <Text style={styles.enrollTargetText}>Enrolling: {selectedUser.name}</Text>
                 </View>
                 
-                {/* Placeholder for symmetry */}
-                <View style={{ width: 44 }} />
+                {/* Toggle Camera Button */}
+                <Pressable 
+                  style={styles.backBtn} 
+                  onPress={() => setCameraPosition(p => p === 'front' ? 'back' : 'front')} 
+                  disabled={busy || success}
+                >
+                  <Ionicons name="camera-reverse-outline" size={24} color="#fff" />
+                </Pressable>
               </View>
 
               {/* Error Display */}

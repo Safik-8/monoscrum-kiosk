@@ -11,9 +11,9 @@ import {
   Modal,
   Animated,
   Platform,
+  Easing,
 } from 'react-native';
 import { CameraView } from 'expo-camera';
-import { Canvas, Path, Paint, Skia } from '@shopify/react-native-skia';
 import { Colors } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { API_URL } from '../../constants/config';
@@ -26,13 +26,13 @@ const SCANNER_SIZE = width * 0.8;
 interface Props {
   session?: Session | null;
   hasCameraPermission: boolean;
-  requestCameraPermission: () => Promise<boolean>;
+  requestCameraPermission: () => Promise<any>;
   busy: boolean;
   error: string;
   capturedImage?: string | null;
   scanResult?: any;
   onClearScanResult?: () => void;
-  onScan: (ref: React.RefObject<CameraView | null>) => void;
+  onScan: (photoOutput: any) => void;
 }
 
 export function ScanScreen({
@@ -46,12 +46,39 @@ export function ScanScreen({
   onClearScanResult,
   onScan,
 }: Props) {
-  const cameraRef = useRef<CameraView>(null);
   const [stats, setStats] = useState<any>(null);
   const successAnim = useRef(new Animated.Value(0)).current;
+  const spinAnim = useRef(new Animated.Value(0)).current;
+
+  // Expo Camera Setup
+  const cameraRef = useRef<CameraView>(null);
+
+  useEffect(() => {
+    if (busy) {
+      Animated.loop(
+        Animated.timing(spinAnim, {
+          toValue: 1,
+          duration: 1000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        })
+      ).start();
+    } else {
+      spinAnim.stopAnimation();
+      spinAnim.setValue(0);
+    }
+  }, [busy]);
+
+  const spin = spinAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg']
+  });
+
+
 
   useEffect(() => {
     if (scanResult && scanResult.match) {
+      console.log(`[ScanScreen] Scan successful! Match confidence: ${scanResult.confidence}`);
       Animated.sequence([
         Animated.timing(successAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
         Animated.delay(4000),
@@ -72,34 +99,26 @@ export function ScanScreen({
         headers: { Authorization: `Bearer ${session?.accessToken}` }
       });
       const data = await parseResponse(response);
-      if (data.success) {
-        setStats(data.stats);
+      if ((data as any).success) {
+        setStats((data as any).stats);
       }
     } catch (err) {
       console.log('Failed to fetch branch stats', err);
     }
   };
 
-  // ── Auto-Capture Logic ──────────────────────────────────────────────────
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (!busy && !scanResult && !error && hasCameraPermission && !capturedImage) {
-      timer = setTimeout(() => {
-        onScan(cameraRef);
-      }, 3000);
-    }
-    return () => clearTimeout(timer);
-  }, [busy, scanResult, error, hasCameraPermission, onScan, capturedImage]);
-
   // If there's an error, dismiss it quickly to resume scanning
   useEffect(() => {
     if (error && onClearScanResult) {
+      console.log(`[ScanScreen] Error displayed to user: ${error}. Clearing in 2.5s...`);
       const timer = setTimeout(() => {
         onClearScanResult(); 
       }, 2500);
       return () => clearTimeout(timer);
     }
   }, [error, onClearScanResult]);
+
+
 
   // ── Auto-Dismiss Success Screen ───────────────────────────────────────────
   useEffect(() => {
@@ -111,10 +130,7 @@ export function ScanScreen({
     }
   }, [scanResult, onClearScanResult]);
 
-  const getContoursPath = () => {
-    if (Platform.OS === 'web' || !Skia || !Skia.Path) return null as any;
-    return Skia.Path.Make();
-  };
+
 
   if (!hasCameraPermission) {
     return (
@@ -128,6 +144,8 @@ export function ScanScreen({
       </View>
     );
   }
+
+
 
   return (
     <View style={styles.container}>
@@ -146,16 +164,11 @@ export function ScanScreen({
                 facing="front"
               />
             )}
-
-            {!capturedImage && !scanResult && Platform.OS !== 'web' && (
-              <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
-                <Path path={getContoursPath()} color="cyan" style="stroke" strokeWidth={1}>
-                  <Paint style="stroke" strokeWidth={1.5} color="rgba(0, 255, 255, 0.6)" />
-                </Path>
-              </Canvas>
-            )}
           </View>
-          <View style={[styles.scannerRing, busy && styles.scannerRingBusy]} />
+          <View style={styles.scannerRing} />
+          {busy && (
+            <Animated.View style={[styles.premiumLoader, { transform: [{ rotate: spin }] }]} />
+          )}
         </View>
 
         <View style={styles.statsContainer}>
@@ -195,10 +208,21 @@ export function ScanScreen({
         </Text>
 
         <Text style={styles.authenticatingText}>
-          {busy ? 'AUTHENTICATING FOR TRANSACTION...' : 'POSITION FACE IN RING'}
+          {busy ? 'AUTHENTICATING FOR TRANSACTION...' : 'POSITION FACE IN RING AND PRESS CAPTURE'}
         </Text>
 
       </View>
+
+      {!busy && !scanResult && !error && !capturedImage && (
+        <View style={styles.captureButtonWrapper}>
+          <TouchableOpacity 
+            style={styles.captureButton}
+            onPress={() => onScan(cameraRef.current)}
+          >
+            <Ionicons name="camera" size={32} color="#050a11" />
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Success Modal */}
       <Modal visible={!!scanResult} transparent animationType="fade">
@@ -227,7 +251,9 @@ export function ScanScreen({
             <Ionicons name="warning" size={50} color="#ff3333" />
             <Text style={styles.modalTitle}>Face Not Recognized</Text>
             <Text style={styles.modalDesc}>{error}</Text>
-            <TouchableOpacity style={styles.modalBtn} onPress={onClearScanResult}>
+            <TouchableOpacity style={styles.modalBtn} onPress={() => {
+              if (onClearScanResult) onClearScanResult();
+            }}>
               <Text style={styles.modalBtnText}>Try Again</Text>
             </TouchableOpacity>
             <Text style={styles.modalSubText}>If the user is not found, please go to the 'Enroll' tab to register them.</Text>
@@ -278,9 +304,18 @@ const styles = StyleSheet.create({
     shadowColor: '#00ffff', shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8, shadowRadius: 15,
   },
-  scannerRingBusy: {
-    borderColor: '#ffaa00',
+  premiumLoader: {
+    width: '100%', height: '100%',
+    borderRadius: SCANNER_SIZE / 2,
+    position: 'absolute',
+    borderWidth: 8,
+    borderColor: 'transparent',
+    borderTopColor: '#ffaa00',
+    borderRightColor: '#ffaa00',
     shadowColor: '#ffaa00',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 25,
   },
   statsContainer: {
     flexDirection: 'row', justifyContent: 'space-between',
@@ -326,4 +361,25 @@ const styles = StyleSheet.create({
   modalBtn: { backgroundColor: '#ff3333', paddingVertical: 12, paddingHorizontal: 30, borderRadius: 25 },
   modalBtnText: { color: '#ffffff', fontSize: 16, fontWeight: 'bold' },
   modalSubText: { color: '#5b98a3', fontSize: 12, textAlign: 'center', marginTop: 15 },
+  captureButtonWrapper: {
+    position: 'absolute',
+    bottom: 120, /* Pushed up higher to clear the tab bar */
+    alignItems: 'center',
+    width: '100%',
+    zIndex: 100, /* Ensure it sits on top */
+  },
+  captureButton: {
+    backgroundColor: '#00ffff',
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 4,
+    borderColor: 'rgba(0, 255, 255, 0.3)',
+    shadowColor: '#00ffff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 15,
+  },
 });
