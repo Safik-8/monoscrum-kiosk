@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { API_URL } from '../constants/config';
 import { fetchWithTimeout, parseResponse } from '../lib/http';
 import { Session } from '../types';
@@ -57,10 +58,18 @@ export function useEnroll(session: Session | null) {
       setSuccess(false);
       
       // Expo Camera uses takePictureAsync
-      const photo = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.3, skipProcessing: true });
-      if (!photo?.base64) throw new Error('Unable to capture camera image.');
+      const photo = await cameraRef.current.takePictureAsync({ quality: 0.3, skipProcessing: true });
+      if (!photo?.uri) throw new Error('Unable to capture camera image.');
       
-      const b64 = `data:image/jpeg;base64,${photo.base64}`;
+      const manipulatedImage = await ImageManipulator.manipulateAsync(
+        photo.uri,
+        [{ resize: { width: 400 } }],
+        { compress: 0.5, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+      );
+
+      if (!manipulatedImage.base64) throw new Error('Failed to compress image.');
+
+      const b64 = `data:image/jpeg;base64,${manipulatedImage.base64}`;
       setCapturedImage(b64);
 
       const response = await fetchWithTimeout(`${API_URL}/kiosk/enroll`, {
@@ -69,7 +78,7 @@ export function useEnroll(session: Session | null) {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session?.accessToken}`,
         },
-        body: JSON.stringify({ userId: selectedUser._id, imageBase64: photo.base64 }),
+        body: JSON.stringify({ userId: selectedUser._id, imageBase64: manipulatedImage.base64 }),
       });
       
       const result = await parseResponse(response);

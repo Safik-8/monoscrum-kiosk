@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
 import * as Location from 'expo-location';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { API_URL, REFRESH_TOKEN_KEY } from '../constants/config';
 import { getDeviceId } from '../lib/deviceId';
 import { tokenStore } from '../lib/tokenStore';
@@ -187,16 +188,25 @@ export function useAuth(): UseAuthReturn {
     try {
       // Vision Camera v5 uses photoOutput.takePhoto()
       console.log('[useAuth] Taking photo with camera...');
-      const photo = await photoOutput.takePictureAsync({ base64: true, quality: 0.3, skipProcessing: true });
+      const photo = await photoOutput.takePictureAsync({ quality: 0.3, skipProcessing: true });
       
-      if (!photo || !photo.base64) throw new Error('Unable to capture camera image.');
+      if (!photo || !photo.uri) throw new Error('Unable to capture camera image.');
       
-      const photoUri = photo.uri;
+      console.log('[useAuth] Resizing image to reduce payload size...');
+      const manipulatedImage = await ImageManipulator.manipulateAsync(
+        photo.uri,
+        [{ resize: { width: 400 } }],
+        { compress: 0.5, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+      );
+
+      if (!manipulatedImage.base64) throw new Error('Failed to compress image.');
+
+      const photoUri = manipulatedImage.uri;
       setCapturedImage(photoUri);
-      console.log(`[useAuth] Photo taken successfully: ${photoUri}`);
+      console.log(`[useAuth] Photo resized successfully: ${photoUri}`);
 
       console.log('[useAuth] Using native Base64...');
-      const base64Data = photo.base64;
+      const base64Data = manipulatedImage.base64;
       console.log(`[useAuth] Base64 conversion successful. Length: ${base64Data.length}`);
 
       console.log(`[useAuth] Sending POST request to ${API_URL}/kiosk/attendance/scan...`);
