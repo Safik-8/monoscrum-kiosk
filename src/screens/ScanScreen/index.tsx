@@ -125,7 +125,7 @@ export function ScanScreen({
     if (scanResult && onClearScanResult) {
       const timer = setTimeout(() => {
         onClearScanResult();
-      }, 5000); // give them 5 seconds to see the timeline
+      }, 2500); // 2.5s allows employee to see result before next person scans
       return () => clearTimeout(timer);
     }
   }, [scanResult, onClearScanResult]);
@@ -224,21 +224,86 @@ export function ScanScreen({
         </View>
       )}
 
-      {/* Success Modal */}
+      {/* Success / Status Modal with Previous Operation Transparency */}
       <Modal visible={!!scanResult} transparent animationType="fade">
         <View style={styles.modalBg}>
-          <Animated.View style={[styles.modalContent, { borderColor: '#00ff88', opacity: successAnim, transform: [{ scale: successAnim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) }] }]}>
-            <Ionicons name="checkmark-circle" size={60} color="#00ff88" style={{ marginBottom: 10 }} />
-            <Text style={styles.resultName}>{scanResult?.user?.fullName || 'Unknown User'}</Text>
+          <Animated.View style={[
+            styles.modalContent, 
+            { 
+              borderColor: scanResult?.action === 'CHECKED_OUT' ? '#ffaa00' : '#00ff88', 
+              opacity: successAnim, 
+              transform: [{ scale: successAnim.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) }] 
+            }
+          ]}>
+            <Ionicons 
+              name={
+                scanResult?.action === 'CHECKED_OUT' 
+                  ? "exit-outline" 
+                  : scanResult?.action === 'REVERIFIED' 
+                  ? "checkmark-done-circle-outline" 
+                  : "checkmark-circle"
+              } 
+              size={56} 
+              color={scanResult?.action === 'CHECKED_OUT' ? '#ffaa00' : '#00ff88'} 
+              style={{ marginBottom: 8 }} 
+            />
+            
+            <Text style={styles.resultName}>{scanResult?.user?.fullName || 'Verified Employee'}</Text>
+            
             {scanResult?.user?.department && (
-              <Text style={styles.resultDept}>{scanResult.user.designation?.title || 'Staff'} • {scanResult.user.department?.name || 'Dept'}</Text>
+              <Text style={styles.resultDept}>
+                {scanResult.user.designation?.title || 'Staff'} • {scanResult.user.department?.name || 'MonoScrum'}
+              </Text>
             )}
-            <Text style={styles.resultStatus}>
-              {scanResult?.attendance?.status === 'PRESENT' ? '✅ CHECKED IN' : '👋 CHECKED OUT'}
+
+            <View style={[
+              styles.statusPill, 
+              { 
+                backgroundColor: scanResult?.action === 'CHECKED_OUT' ? 'rgba(255,170,0,0.15)' : 'rgba(0,255,136,0.15)',
+                borderColor: scanResult?.action === 'CHECKED_OUT' ? '#ffaa00' : '#00ff88',
+                marginTop: 10,
+                paddingVertical: 6,
+                paddingHorizontal: 16
+              }
+            ]}>
+              <Text style={[
+                styles.resultStatus, 
+                { color: scanResult?.action === 'CHECKED_OUT' ? '#ffaa00' : '#00ff88', marginTop: 0 }
+              ]}>
+                {scanResult?.action === 'REVERIFIED' || scanResult?.attendance?.status === 'REVERIFIED'
+                  ? '🔄 REVERIFIED (ALREADY IN)'
+                  : scanResult?.action === 'CHECKED_OUT'
+                  ? '👋 CHECKED OUT'
+                  : '✅ CHECKED IN'}
+              </Text>
+            </View>
+
+            {/* Previous Operation & Workday Insight */}
+            {scanResult?.previousOperation && (
+              <View style={styles.operationHistoryBox}>
+                <View style={styles.historyRow}>
+                  <Ionicons name="time-outline" size={16} color="#8b9bb4" />
+                  <Text style={styles.historyText}>
+                    {scanResult.previousOperation.summary}
+                  </Text>
+                </View>
+                {scanResult?.totalHoursToday && (
+                  <View style={[styles.historyRow, { marginTop: 4 }]}>
+                    <Ionicons name="briefcase-outline" size={16} color="#00ffff" />
+                    <Text style={[styles.historyText, { color: '#00ffff', fontWeight: 'bold' }]}>
+                      Total Today: {scanResult.totalHoursToday}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+
+            <Text style={{ color: '#8b9bb4', marginTop: 12, fontSize: 13, textAlign: 'center' }}>
+              Auto-ready in 2s for next employee
             </Text>
-            <Text style={{ color: '#00ff88', marginTop: 10, fontSize: 16, fontWeight: 'bold' }}>User Verified Successfully</Text>
+
             <TouchableOpacity onPress={onClearScanResult} style={styles.dismissBtn}>
-              <Text style={styles.dismissBtnText}>Dismiss</Text>
+              <Text style={styles.dismissBtnText}>Next Employee</Text>
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -248,15 +313,17 @@ export function ScanScreen({
       <Modal visible={!!error} transparent animationType="fade">
         <View style={styles.modalBg}>
           <View style={styles.modalContent}>
-            <Ionicons name="warning" size={50} color="#ff3333" />
-            <Text style={styles.modalTitle}>Face Not Recognized</Text>
+            <Ionicons name="alert-circle-outline" size={56} color="#ff3333" />
+            <Text style={styles.modalTitle}>Scan Unsuccessful</Text>
             <Text style={styles.modalDesc}>{error}</Text>
             <TouchableOpacity style={styles.modalBtn} onPress={() => {
               if (onClearScanResult) onClearScanResult();
             }}>
-              <Text style={styles.modalBtnText}>Try Again</Text>
+              <Text style={styles.modalBtnText}>Ready for Next Scan</Text>
             </TouchableOpacity>
-            <Text style={styles.modalSubText}>If the user is not found, please go to the 'Enroll' tab to register them.</Text>
+            <Text style={styles.modalSubText}>
+              Not registered yet? An admin can enroll you under the 'Enroll' tab in seconds.
+            </Text>
           </View>
         </View>
       </Modal>
@@ -367,6 +434,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     zIndex: 100, /* Ensure it sits on top */
+  },
+  operationHistoryBox: {
+    marginTop: 14,
+    padding: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    width: '100%',
+  },
+  historyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  historyText: {
+    color: '#cbd5e1',
+    fontSize: 13,
+    fontWeight: '500',
   },
   captureButton: {
     backgroundColor: '#00ffff',

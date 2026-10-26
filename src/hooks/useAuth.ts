@@ -60,7 +60,8 @@ export function useAuth(): UseAuthReturn {
           const data = await parseResponse(response);
           if (data.token && data.refreshToken) {
             await tokenStore.set(REFRESH_TOKEN_KEY, data.refreshToken);
-            setSession(prev => prev ? { ...prev, accessToken: data.token } : null);
+            const tokenStr: string = data.token;
+            setSession(prev => prev ? { ...prev, accessToken: tokenStr } : null);
             console.log('Token refreshed in background');
           }
         } catch (e) {
@@ -77,7 +78,9 @@ export function useAuth(): UseAuthReturn {
     try {
       const { status } = await Location.getForegroundPermissionsAsync();
       if (status === 'granted') {
-        const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        const location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Highest,
+        });
         setKioskLocation({
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,
@@ -148,8 +151,14 @@ export function useAuth(): UseAuthReturn {
       setPassword('');
       await checkExistingLocation();
       setAppScreen('main');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed.');
+    } catch (err: any) {
+      console.error(`[useAuth] Login failed at ${API_URL}/auth/login:`, err);
+      const msg = err?.message || 'Login failed.';
+      setError(
+        msg === 'Network request failed' || msg === 'Failed to fetch'
+          ? `Cannot reach server at ${API_URL}. Check your Wi-Fi or firewall.`
+          : msg
+      );
     } finally {
       setBusy(false);
     }
@@ -210,6 +219,24 @@ export function useAuth(): UseAuthReturn {
       console.log(`[useAuth] Base64 conversion successful. Length: ${base64Data.length}`);
 
       console.log(`[useAuth] Sending POST request to ${API_URL}/kiosk/attendance/scan...`);
+      // Obtain the freshest possible GPS coordinate right before punch
+      let currentScanLocation = kioskLocation;
+      try {
+        const { status } = await Location.getForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const freshLoc = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Highest,
+          });
+          currentScanLocation = {
+            latitude: freshLoc.coords.latitude,
+            longitude: freshLoc.coords.longitude,
+          };
+          setKioskLocation(currentScanLocation);
+        }
+      } catch (locErr) {
+        console.log('[useAuth] Realtime GPS fetch fallback to cached:', locErr);
+      }
+
       const response = await fetchWithTimeout(`${API_URL}/kiosk/attendance/scan`, {
         method: 'POST',
         headers: {
@@ -219,7 +246,7 @@ export function useAuth(): UseAuthReturn {
         body: JSON.stringify({ 
           imageBase64: base64Data, 
           deviceId: session.deviceId,
-          location: kioskLocation 
+          location: currentScanLocation 
         }),
       }, 15_000); // 15s timeout for face recognition pipeline
       

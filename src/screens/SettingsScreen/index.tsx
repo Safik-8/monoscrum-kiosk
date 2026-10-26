@@ -59,6 +59,34 @@ export function SettingsScreen({ session, busy, onLogout }: Props) {
         ))}
       </View>
 
+      {/* Kiosk Biometric Policy & Session Freeze */}
+      <Text style={styles.sectionLabel}>BIOMETRIC PUNCH POLICIES</Text>
+      <View style={styles.infoCard}>
+        <View style={[styles.infoRow, styles.infoRowBorder]}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.infoLabel}>Session Freeze Time</Text>
+            <Text style={{ fontSize: 11, color: Colors.textMuted, marginTop: 2 }}>
+              Min time before Check-Out allowed
+            </Text>
+          </View>
+          <View style={styles.prefValPill}>
+            <Text style={styles.prefVal}>60 Seconds</Text>
+          </View>
+        </View>
+
+        <View style={styles.infoRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.infoLabel}>Anti-Double Punch Throttle</Text>
+            <Text style={{ fontSize: 11, color: Colors.textMuted, marginTop: 2 }}>
+              Prevents duplicate queue bursts
+            </Text>
+          </View>
+          <View style={styles.prefValPill}>
+            <Text style={styles.prefVal}>15 Seconds</Text>
+          </View>
+        </View>
+      </View>
+
       {/* Preferences */}
       <Text style={styles.sectionLabel}>PREFERENCES</Text>
       {PREFERENCES.map((pref, i) => (

@@ -25,7 +25,9 @@ export function LocationModal({ visible, onLocationGranted, onClose }: LocationM
         return;
       }
 
-      const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Highest,
+      });
       onLocationGranted({
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,

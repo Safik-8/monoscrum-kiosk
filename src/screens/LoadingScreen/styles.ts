@@ -1,39 +1,87 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
 import { Colors } from '../../constants/theme';
+
+const { width } = Dimensions.get('window');
+const illustrationWidth = Math.min(width * 0.78, 320);
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.bg,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 50,
+    paddingHorizontal: 24,
+  },
+  topSpace: {
+    flex: 0.6,
+  },
+  centerContent: {
     alignItems: 'center',
     justifyContent: 'center',
+    width: '100%',
   },
-  ring: {
-    width: 100,
-    height: 100,
-    borderRadius: 26,
+  illustrationContainer: {
+    width: illustrationWidth,
+    height: illustrationWidth * 0.95,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: Colors.accent,
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 8,
-    marginBottom: 24,
+    marginBottom: 28,
   },
-  title: {
-    fontSize: 28,
+  illustration: {
+    width: '100%',
+    height: '100%',
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    marginTop: 8,
+  },
+  brandTextWrapper: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  brandFirst: {
+    fontSize: 27,
     fontWeight: '800',
-    color: Colors.text,
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: Colors.textSub,
+    color: '#0284C7', // energetic modern SaaS cyan/blue
     letterSpacing: 2,
-    marginTop: 4,
+  },
+  brandSecond: {
+    fontSize: 27,
+    fontWeight: '800',
+    color: '#0F172A', // deep navy slate
+    letterSpacing: 2,
+  },
+  tagline: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748B',
+    letterSpacing: 2.2,
     textTransform: 'uppercase',
+    marginTop: 6,
+  },
+  bottomSection: {
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    width: '100%',
+    paddingBottom: 24,
   },
   spinner: {
-    marginTop: 36,
+    marginBottom: 14,
+  },
+  statusText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#334155',
+    letterSpacing: 0.3,
+  },
+  versionText: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginTop: 8,
+    fontWeight: '500',
   },
 });

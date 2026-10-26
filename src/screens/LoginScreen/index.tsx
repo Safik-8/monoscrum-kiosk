@@ -13,6 +13,7 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/theme';
+import { API_URL } from '../../constants/config';
 import { Logo } from '../../components/Logo';
 import { styles } from './styles';
 
@@ -148,6 +149,9 @@ export function LoginScreen({
         </Pressable>
 
         <Text style={styles.footer}>Powered by Stackdot · MonoScrum v2</Text>
+        <Text style={{ fontSize: 10, color: '#94a3b8', textAlign: 'center', marginTop: 6 }}>
+          Target: {API_URL}
+        </Text>
       </Animated.View>
     </KeyboardAvoidingView>
   );
