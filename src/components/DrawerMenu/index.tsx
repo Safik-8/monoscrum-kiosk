@@ -55,71 +55,82 @@ export function DrawerMenu({
       <Animated.View style={[styles.drawer, { transform: [{ translateX: slideAnim }] }]}>
         <View style={styles.inner}>
 
-          {/* Header — Logo + brand + close */}
+          {/* Clean Enterprise Profile & Brand Header */}
           <View style={styles.header}>
-            <Logo size={44} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.brandName}>MonoScrum</Text>
-              <Text style={styles.brandTag}>Kiosk · Attendance</Text>
-            </View>
-            <Pressable onPress={onClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={20} color={Colors.textMuted} />
-            </Pressable>
-          </View>
-
-
-          {/* Nav items */}
-          <Text style={styles.navSectionLabel}>NAVIGATION</Text>
-          {NAV_ITEMS.map((item) => {
-            const isActive = activeTab === item.tab;
-            return (
-              <Pressable
-                key={item.tab}
-                style={[styles.navItem, isActive && styles.navItemActive]}
-                onPress={() => { onTabSelect(item.tab); onClose(); }}
-              >
-                <View style={[styles.navIcon, isActive && styles.navIconActive]}>
-                  <Ionicons 
-                    name={item.icon as any} 
-                    size={20} 
-                    color={isActive ? Colors.tabActive : Colors.tabInactive} 
-                  />
+            <View style={styles.headerTopRow}>
+              <View style={styles.brandRow}>
+                <Logo size={42} />
+                <View>
+                  <Text style={styles.brandName}>monoscrum</Text>
+                  <Text style={styles.brandTag}>Enterprise Kiosk</Text>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
-                    {item.label}
-                  </Text>
-                  <Text style={styles.navDesc}>{item.desc}</Text>
-                </View>
-                {isActive && <View style={styles.activeIndicator} />}
+              </View>
+              <Pressable onPress={onClose} style={styles.closeBtn} hitSlop={8}>
+                <Ionicons name="close" size={20} color="#64748B" />
               </Pressable>
-            );
-          })}
+            </View>
 
-          <View style={{ flex: 1 }} />
-
-          {/* Footer: operator card + logout + version */}
-          <View style={styles.footer}>
-            {/* Operator card — sits just above Sign Out */}
-            <View style={[styles.operatorCard, styles.operatorCardFooter]}>
+            {/* Operator Quick Profile */}
+            <View style={styles.profileBox}>
               <View style={styles.operatorAvatar}>
                 <Text style={styles.operatorAvatarText}>{initial}</Text>
               </View>
-              <View>
-                <Text style={styles.operatorName}>{session?.operatorName || 'Kiosk Operator'}</Text>
+              <View style={styles.profileTextWrap}>
+                <Text style={styles.operatorName} numberOfLines={1}>
+                  {session?.operatorName || 'Kiosk Operator'}
+                </Text>
                 <View style={styles.statusRow}>
                   <View style={styles.onlineDot} />
                   <Text style={styles.statusText}>Active Session</Text>
                 </View>
               </View>
             </View>
+          </View>
 
+          {/* Nav Items */}
+          <View style={styles.navSection}>
+            <Text style={styles.navSectionLabel}>MENU</Text>
+            {NAV_ITEMS.map((item) => {
+              const isActive = activeTab === item.tab;
+              return (
+                <Pressable
+                  key={item.tab}
+                  style={({ pressed }) => [
+                    styles.navItem,
+                    isActive && styles.navItemActive,
+                    pressed && styles.navItemPressed,
+                  ]}
+                  onPress={() => { onTabSelect(item.tab); onClose(); }}
+                >
+                  <Ionicons 
+                    name={item.icon as any} 
+                    size={22} 
+                    color={isActive ? Colors.primary : '#64748B'} 
+                    style={styles.navIcon}
+                  />
+                  <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
+                    {item.label}
+                  </Text>
+                  {isActive && <Ionicons name="chevron-forward" size={16} color={Colors.primary} style={styles.chevronActive} />}
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <View style={{ flex: 1 }} />
+
+          {/* Footer: Simple Clean Logout */}
+          <View style={styles.footer}>
             <Pressable
-              style={[styles.logoutBtn, busy && styles.logoutBtnDisabled]}
+              style={({ pressed }) => [
+                styles.logoutBtn,
+                pressed && styles.logoutBtnPressed,
+                busy && styles.logoutBtnDisabled,
+              ]}
               onPress={() => { onClose(); onLogout(); }}
               disabled={busy}
             >
-              <Ionicons name="log-out-outline" size={20} color={Colors.red} />
+              <Ionicons name="log-out-outline" size={20} color="#EF4444" />
               <Text style={styles.logoutText}>Sign Out</Text>
             </Pressable>
             <Text style={styles.versionText}>MonoScrum Kiosk v2.0</Text>

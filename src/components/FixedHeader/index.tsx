@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTab } from '../../types';
 import { Logo } from '../Logo';
@@ -7,7 +7,7 @@ import { Colors } from '../../constants/theme';
 import { styles } from './styles';
 
 const TAB_TITLES: Record<BottomTab, string> = {
-  scan: 'Face Scanner',
+  scan: 'Kiosk Capture',
   new: 'Face Enrollment',
   history: 'Attendance History',
   settings: 'Settings',
@@ -18,10 +18,24 @@ interface Props {
   operatorName?: string;
   regionName?: string;
   onMenuPress: () => void;
+  // Detail page custom overrides
+  customTitle?: string;
+  customBackPress?: () => void;
+  customAvatarImage?: string;
+  customInitials?: string;
 }
 
-export function FixedHeader({ activeTab, operatorName, regionName, onMenuPress }: Props) {
-  const initial = operatorName ? operatorName.charAt(0).toUpperCase() : 'K';
+export function FixedHeader({ 
+  activeTab, 
+  operatorName, 
+  regionName, 
+  onMenuPress,
+  customTitle,
+  customBackPress,
+  customAvatarImage,
+  customInitials,
+}: Props) {
+  const isDetailMode = !!customBackPress;
 
   return (
     <View style={styles.header}>
@@ -30,32 +44,56 @@ export function FixedHeader({ activeTab, operatorName, regionName, onMenuPress }
 
       <View style={styles.contentRow}>
 
-        {/* Left slot — fixed 44px */}
-        <View style={styles.sideSlot}>
-          <Pressable onPress={onMenuPress} style={styles.menuBtn} hitSlop={8}>
-            <Ionicons name="menu-outline" size={28} color={Colors.text} />
-          </Pressable>
+        {/* Left Cluster — Either Logo+Title OR BackButton+Title */}
+        <View style={styles.brandCluster}>
+          {isDetailMode ? (
+            <Pressable 
+              onPress={customBackPress} 
+              style={({ pressed }) => [
+                styles.backBtn,
+                pressed && { opacity: 0.6 }
+              ]}
+              hitSlop={8}
+              accessibilityLabel="Go Back"
+            >
+              <Ionicons name="arrow-back" size={24} color={Colors.text} />
+            </Pressable>
+          ) : (
+            <Logo size={42} />
+          )}
+
+          <Text style={styles.pageTitle} numberOfLines={1}>
+            {customTitle || TAB_TITLES[activeTab]}
+          </Text>
         </View>
 
-        {/* Center — fills remaining space, content centered */}
-        <View style={styles.centerSlot}>
-          <Logo size={26} />
-          <View>
-            <Text style={styles.pageTitle} numberOfLines={1}>
-              {TAB_TITLES[activeTab]}
-            </Text>
-            <Text style={styles.brand}>
-              {regionName ? `📍 ${regionName}` : 'MonoScrum Kiosk'}
-            </Text>
+        {/* Right slot — Selected User Avatar (in detail mode) OR Menu Avatar */}
+        {isDetailMode ? (
+          <View style={styles.avatarCircle}>
+            {customAvatarImage ? (
+              <Image source={{ uri: customAvatarImage }} style={styles.userAvatarImg} />
+            ) : customInitials ? (
+              <Text style={styles.userAvatarInitials}>{customInitials}</Text>
+            ) : (
+              <Ionicons name="person" size={17} color={Colors.primary} />
+            )}
           </View>
-        </View>
-
-        {/* Right slot — same fixed 44px as left */}
-        <View style={[styles.sideSlot, styles.sideSlotRight]}>
-          <Pressable style={styles.avatar}>
-            <Text style={styles.avatarText}>{initial}</Text>
+        ) : (
+          <Pressable 
+            style={({ pressed }) => [
+              styles.avatarBtn,
+              pressed && styles.avatarBtnPressed,
+            ]} 
+            onPress={onMenuPress}
+            hitSlop={8}
+            accessibilityLabel="Open Menu"
+          >
+            <View style={styles.avatarCircle}>
+              <Ionicons name="person" size={17} color={Colors.primary} />
+            </View>
+            <View style={styles.avatarOnlineDot} />
           </Pressable>
-        </View>
+        )}
 
       </View>
     </View>

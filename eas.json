@@ -11,9 +11,18 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://192.168.1.50:5178/api",
+        "EXPO_PUBLIC_LIVE_API_URL": "http://192.168.1.50:5178/api"
       }
     },
-    "production": {}
+    "production": {
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://192.168.1.50:5178/api",
+        "EXPO_PUBLIC_LIVE_API_URL": "http://192.168.1.50:5178/api"
+      }
+    }
   },
   "submit": {
     "production": {}

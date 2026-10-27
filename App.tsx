@@ -2,7 +2,21 @@ import { useCameraPermissions } from 'expo-camera';
 import * as KeepAwake from 'expo-keep-awake';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, Platform, BackHandler } from 'react-native';
+import { View, StyleSheet, Platform, BackHandler, Text, TextInput } from 'react-native';
+
+// Cap system font scaling multiplier so device accessibility/large text settings
+// do not inflate font metrics and truncate words with '...' or slice letters
+if ((Text as any).defaultProps == null) {
+  (Text as any).defaultProps = {};
+}
+(Text as any).defaultProps.maxFontSizeMultiplier = 1.05;
+(Text as any).defaultProps.allowFontScaling = false;
+
+if ((TextInput as any).defaultProps == null) {
+  (TextInput as any).defaultProps = {};
+}
+(TextInput as any).defaultProps.maxFontSizeMultiplier = 1.05;
+(TextInput as any).defaultProps.allowFontScaling = false;
 
 // Hooks
 import { useAuth } from './src/hooks/useAuth';
@@ -32,6 +46,7 @@ export default function App() {
   const auth = useAuth();
   const drawer = useDrawer();
   const [activeTab, setActiveTab] = useState<BottomTab>('new');
+  const [historySelectedUser, setHistorySelectedUser] = useState<any | null>(null);
 
   const [permission, requestCameraPermission] = useCameraPermissions();
   const hasCameraPermission = permission?.granted ?? false;
@@ -94,6 +109,20 @@ export default function App() {
     );
   }
 
+
+  // Clear selected user if navigating away from history tab
+  const handleTabPress = (tab: BottomTab) => {
+    if (tab !== 'history') {
+      setHistorySelectedUser(null);
+    }
+    setActiveTab(tab);
+  };
+
+  const getInitials = (name?: string) => {
+    if (!name) return '?';
+    return name.substring(0, 2).toUpperCase();
+  };
+
   // ── Main App ───────────────────────────────────────────────────────────────
   return (
     <View style={styles.root}>
@@ -105,12 +134,32 @@ export default function App() {
 
       <StatusBar style="dark" />
 
-      {/* Fixed top header */}
+      {/* Fixed top header reused across all 4 pages */}
       <FixedHeader
         activeTab={activeTab}
         operatorName={auth.session?.operatorName}
         regionName={auth.session?.regionName}
         onMenuPress={drawer.openDrawer}
+        customTitle={
+          activeTab === 'history' && historySelectedUser
+            ? (historySelectedUser.fullName || historySelectedUser.name || historySelectedUser.username)
+            : undefined
+        }
+        customBackPress={
+          activeTab === 'history' && historySelectedUser
+            ? () => setHistorySelectedUser(null)
+            : undefined
+        }
+        customAvatarImage={
+          activeTab === 'history' && historySelectedUser?.profileImage
+            ? historySelectedUser.profileImage
+            : undefined
+        }
+        customInitials={
+          activeTab === 'history' && historySelectedUser
+            ? getInitials(historySelectedUser.fullName || historySelectedUser.name || historySelectedUser.username)
+            : undefined
+        }
       />
 
       {/* Tab content area */}
@@ -126,10 +175,19 @@ export default function App() {
             scanResult={auth.scanResult}
             onClearScanResult={auth.clearScanResult}
             onScan={auth.scanFace}
+            onNavigateHistory={() => setActiveTab('history')}
+            onBack={() => setActiveTab('new')}
+            onOpenDrawer={drawer.openDrawer}
           />
         )}
         {activeTab === 'new' && <NewScreen session={auth.session} />}
-        {activeTab === 'history' && <HistoryScreen session={auth.session} />}
+        {activeTab === 'history' && (
+          <HistoryScreen 
+            session={auth.session} 
+            selectedUserOverride={historySelectedUser}
+            onSelectedUserChange={setHistorySelectedUser}
+          />
+        )}
         {activeTab === 'settings' && (
           <SettingsScreen
             session={auth.session}
@@ -140,7 +198,7 @@ export default function App() {
       </View>
 
       {/* Bottom rudder */}
-      <BottomTabBar activeTab={activeTab} onTabPress={setActiveTab} />
+      <BottomTabBar activeTab={activeTab} onTabPress={handleTabPress} />
 
       {/* Left slide drawer */}
       <DrawerMenu

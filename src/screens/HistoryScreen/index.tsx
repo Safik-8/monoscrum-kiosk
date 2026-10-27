@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, ActivityIndicator, Image } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, TextInput, Pressable, ScrollView, ActivityIndicator, Image, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/theme';
 import { styles } from './styles';
@@ -8,10 +8,13 @@ import { useHistory } from '../../hooks/useHistory';
 
 interface Props {
   session: Session | null;
+  onSelectedUserChange?: (user: any | null) => void;
+  selectedUserOverride?: any | null;
 }
 
-export function HistoryScreen({ session }: Props) {
+export function HistoryScreen({ session, onSelectedUserChange, selectedUserOverride }: Props) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const {
     users,
     searchQuery,
@@ -22,23 +25,45 @@ export function HistoryScreen({ session }: Props) {
     changeDate,
     historyResult,
     branchHistory,
+    refresh,
     refreshBranchHistory,
     busy,
   } = useHistory(session);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      if (selectedUser) {
+        await refresh();
+      } else {
+        await refreshBranchHistory();
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  }, [selectedUser, refresh, refreshBranchHistory]);
 
   const getInitials = (name?: string) => {
     if (!name) return '?';
     return name.substring(0, 2).toUpperCase();
   };
 
+  React.useEffect(() => {
+    if (selectedUserOverride !== undefined) {
+      setSelectedUser(selectedUserOverride);
+    }
+  }, [selectedUserOverride]);
+
   const handleSelectUser = (user: any) => {
     setSelectedUser(user);
+    onSelectedUserChange?.(user);
     setDropdownOpen(false);
     setSearchQuery('');
   };
 
   const clearUser = () => {
     setSelectedUser(null);
+    onSelectedUserChange?.(null);
   };
 
   const isToday = () => {
@@ -50,10 +75,20 @@ export function HistoryScreen({ session }: Props) {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView 
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[Colors.primary]}
+            tintColor={Colors.primary}
+          />
+        }
+      >
       
         {/* User Selection */}
-        {!selectedUser ? (
+        {!selectedUser && (
           <View style={styles.dropdownContainer}>
             <View style={styles.dropdownInput}>
               <Ionicons name="search" size={20} color={Colors.textSub} />
@@ -146,49 +181,30 @@ export function HistoryScreen({ session }: Props) {
               )}
             </View>
           </View>
-        ) : (
-          <View style={styles.selectedUserCard}>
-            <View style={[styles.userAvatar, styles.selectedUserAvatar]}>
-              {selectedUser.profileImage ? (
-                <Image source={{ uri: selectedUser.profileImage }} style={{ width: 60, height: 60, borderRadius: 30 }} />
-              ) : (
-                <Text style={[styles.userInitials, styles.selectedUserAvatarText]}>
-                  {getInitials(selectedUser.fullName || selectedUser.username)}
-                </Text>
-              )}
-            </View>
-            <View style={styles.selectedUserDetails}>
-              <Text style={styles.selectedUserName}>{selectedUser.fullName || selectedUser.username}</Text>
-              <Text style={styles.selectedUserHandle}>Employee ID: {selectedUser._id.substring(selectedUser._id.length - 6)}</Text>
-            </View>
-            <Pressable onPress={clearUser} style={styles.clearUserBtn}>
-              <Ionicons name="close-circle" size={28} color={Colors.textSub} />
-            </Pressable>
-          </View>
         )}
 
         {/* Date Navigation & Timeline */}
         {selectedUser && (
           <>
             <View style={styles.dateHeader}>
-              <Pressable style={styles.dateBtn} onPress={() => changeDate(-1)}>
-                <Ionicons name="chevron-back" size={24} color={Colors.text} />
+              <Pressable style={styles.dateBtn} onPress={() => changeDate(-1)} hitSlop={8}>
+                <Ionicons name="chevron-back" size={20} color={Colors.text} />
               </Pressable>
               
               <Text style={styles.dateText}>
                 {isToday() ? 'Today' : targetDate.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}
               </Text>
               
-              <Pressable style={styles.dateBtn} onPress={() => changeDate(1)} disabled={isToday()}>
-                <Ionicons name="chevron-forward" size={24} color={isToday() ? Colors.textSub : Colors.text} />
+              <Pressable style={styles.dateBtn} onPress={() => changeDate(1)} disabled={isToday()} hitSlop={8}>
+                <Ionicons name="chevron-forward" size={20} color={isToday() ? '#CBD5E1' : Colors.text} />
               </Pressable>
             </View>
 
-            <View style={styles.timelineCard}>
-              <Text style={styles.timelineTitle}>Activity Timeline</Text>
+            <View style={styles.timelineSection}>
+              <Text style={styles.timelineSectionTitle}>Activity Timeline</Text>
               
               {busy ? (
-                <ActivityIndicator size="large" color={Colors.accent} style={{ marginVertical: 40 }} />
+                <ActivityIndicator size="small" color={Colors.primary} style={{ marginVertical: 32 }} />
               ) : !historyResult?.attendance?.sessions?.length ? (
                 <Text style={styles.emptyStateText}>No attendance recorded for this date.</Text>
               ) : (
@@ -209,43 +225,47 @@ export function HistoryScreen({ session }: Props) {
                   }
 
                   return (
-                    <View key={index} style={styles.timelineRow}>
-                      <View style={styles.timelineIconContainer}>
-                        <Ionicons name="log-in" size={20} color={Colors.success} style={{ marginLeft: 4 }} />
-                      </View>
-                      <View style={styles.timelineDetails}>
-                        <Text style={styles.timelineAction}>Check In</Text>
-                        <Text style={styles.timelineTime}>
+                    <View key={index} style={styles.flatSessionRow}>
+                      {/* Check In Column */}
+                      <View style={styles.sessionPoint}>
+                        <View style={styles.sessionTypeRow}>
+                          <View style={styles.inIconBadge}>
+                            <Ionicons name="arrow-down" size={13} color="#10B981" />
+                          </View>
+                          <Text style={styles.sessionLabel}>Check In</Text>
+                        </View>
+                        <Text style={styles.sessionTime}>
                           {validCheckIn && !isNaN(validCheckIn.getTime()) 
                             ? validCheckIn.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                             : '--:--'}
                         </Text>
                       </View>
-                      
-                      {validCheckOut && !isNaN(validCheckOut.getTime()) ? (
-                        <>
-                          <View style={styles.timelineDurationContainer}>
-                            <View style={styles.timelineLine} />
-                            <Text style={styles.timelineDurationText}>{durationStr || session.duration + 'm'}</Text>
-                            <View style={styles.timelineLine} />
-                          </View>
-                          <View style={styles.timelineIconContainer}>
-                            <Ionicons name="log-out" size={20} color={Colors.warning} style={{ marginRight: 2 }} />
-                          </View>
-                          <View style={[styles.timelineDetails, { alignItems: 'flex-end' }]}>
-                            <Text style={styles.timelineAction}>Check Out</Text>
-                            <Text style={styles.timelineTime}>
-                              {validCheckOut.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </Text>
-                          </View>
-                        </>
-                      ) : (
-                        <View style={{ flex: 1, alignItems: 'flex-end', justifyContent: 'center' }}>
-                          <Text style={[styles.timelineTime, { color: Colors.success, fontStyle: 'italic' }]}>
-                            Active Now
+
+                      {/* Duration Indicator */}
+                      <View style={styles.sessionDurationCol}>
+                        <View style={styles.durationPill}>
+                          <Text style={styles.durationPillText}>
+                            {validCheckOut && !isNaN(validCheckOut.getTime()) 
+                              ? (durationStr || session.duration + 'm')
+                              : 'In Progress'}
                           </Text>
                         </View>
-                      )}
+                      </View>
+
+                      {/* Check Out Column */}
+                      <View style={[styles.sessionPoint, { alignItems: 'flex-end' }]}>
+                        <View style={[styles.sessionTypeRow, { justifyContent: 'flex-end' }]}>
+                          <Text style={styles.sessionLabel}>Check Out</Text>
+                          <View style={styles.outIconBadge}>
+                            <Ionicons name="arrow-up" size={13} color="#F59E0B" />
+                          </View>
+                        </View>
+                        <Text style={styles.sessionTime}>
+                          {validCheckOut && !isNaN(validCheckOut.getTime()) 
+                            ? validCheckOut.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                            : '--:--'}
+                        </Text>
+                      </View>
                     </View>
                   );
                 })

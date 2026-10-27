@@ -64,9 +64,9 @@ export function LoginScreen({
       >
         {/* Brand row with real logo */}
         <View style={styles.brandRow}>
-          <Logo size={52} />
+          <Logo size={64} />
           <View>
-            <Text style={styles.brandName}>MonoScrum</Text>
+            <Text style={styles.brandName}>monoscrum</Text>
             <Text style={styles.brandTag}>KIOSK · ATTENDANCE</Text>
           </View>
         </View>

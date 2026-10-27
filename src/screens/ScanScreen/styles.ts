@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { Colors } from '../../constants/theme';
+import { Colors, Radius } from '../../constants/theme';
 
 export const styles = StyleSheet.create({
   page: {
@@ -24,9 +24,9 @@ export const styles = StyleSheet.create({
   cutoutHole: {
     width: 280,
     height: 380,
-    borderRadius: 150,
+    borderRadius: Radius.full,
     borderWidth: 1000,
-    borderColor: 'rgba(0,0,0,0.75)', // Darker overlay for focus
+    borderColor: 'rgba(0,0,0,0.75)',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -35,18 +35,18 @@ export const styles = StyleSheet.create({
     position: 'absolute',
     width: 280,
     height: 380,
-    borderRadius: 150,
+    borderRadius: Radius.full,
     borderWidth: 3,
     borderColor: 'rgba(30,86,217, 0.4)',
-    shadowColor: Colors.accent,
+    shadowColor: Colors.primary,
     shadowOpacity: 0.8,
     shadowRadius: 15,
   },
   beam: {
     width: '100%',
     height: 3,
-    backgroundColor: Colors.accent,
-    shadowColor: Colors.accent,
+    backgroundColor: Colors.primary,
+    shadowColor: Colors.primary,
     shadowOpacity: 1,
     shadowRadius: 10,
     position: 'absolute',
@@ -69,18 +69,18 @@ export const styles = StyleSheet.create({
     backgroundColor: 'rgba(30,86,217,0.15)',
     borderWidth: 1,
     borderColor: 'rgba(30,86,217,0.4)',
-    borderRadius: 24,
+    borderRadius: Radius.pill,
     paddingHorizontal: 18,
     paddingVertical: 10,
-    shadowColor: Colors.accent,
+    shadowColor: Colors.primary,
     shadowOpacity: 0.2,
     shadowRadius: 10,
   },
   statusDot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.accent,
+    borderRadius: Radius.pill,
+    backgroundColor: Colors.primary,
   },
   statusText: {
     fontSize: 14,
@@ -92,7 +92,7 @@ export const styles = StyleSheet.create({
     backgroundColor: 'rgba(220,38,38,0.15)',
     borderWidth: 1,
     borderColor: 'rgba(220,38,38,0.4)',
-    borderRadius: 16,
+    borderRadius: Radius.button,
     paddingHorizontal: 16,
     paddingVertical: 10,
     marginHorizontal: 24,
@@ -136,8 +136,8 @@ export const styles = StyleSheet.create({
     marginBottom: 28,
   },
   permBtn: {
-    backgroundColor: Colors.accent,
-    borderRadius: 14,
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.button,
     minHeight: 52,
     paddingHorizontal: 32,
     alignItems: 'center',
@@ -160,9 +160,9 @@ export const styles = StyleSheet.create({
   },
   resultCard: {
     backgroundColor: Colors.surface,
-    borderRadius: 24,
+    borderRadius: Radius.modal,
     padding: 24,
-    shadowColor: Colors.accent,
+    shadowColor: Colors.primary,
     shadowOpacity: 0.15,
     shadowRadius: 24,
     elevation: 8,
@@ -174,18 +174,18 @@ export const styles = StyleSheet.create({
   resultAvatar: {
     width: 80,
     height: 80,
-    borderRadius: 40,
+    borderRadius: Radius.pill,
     backgroundColor: Colors.surfaceUp,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
     borderWidth: 4,
-    borderColor: Colors.accentDim,
+    borderColor: Colors.primaryDim,
   },
   resultAvatarText: {
     fontSize: 32,
     fontWeight: '800',
-    color: Colors.accent,
+    color: Colors.primary,
   },
   resultName: {
     fontSize: 22,
@@ -196,7 +196,7 @@ export const styles = StyleSheet.create({
   statusBadge: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: Radius.badge,
   },
   statusBadgeText: {
     color: '#fff',
@@ -224,14 +224,14 @@ export const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     backgroundColor: Colors.surfaceUp,
-    borderRadius: 16,
+    borderRadius: Radius.button,
     borderWidth: 1,
     borderColor: Colors.border,
   },
   timelineIconContainer: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: Radius.pill,
     backgroundColor: Colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
@@ -268,9 +268,9 @@ export const styles = StyleSheet.create({
     marginTop: 2,
   },
   doneBtn: {
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.primary,
     paddingVertical: 16,
-    borderRadius: 16,
+    borderRadius: Radius.button,
     alignItems: 'center',
     marginTop: 12,
   },

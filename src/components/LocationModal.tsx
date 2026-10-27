@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ActivityIndicator, Modal } from 'react-native';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../constants/theme';
+import { Colors, Radius } from '../constants/theme';
 
 interface LocationModalProps {
   visible: boolean;
@@ -46,7 +46,7 @@ export function LocationModal({ visible, onLocationGranted, onClose }: LocationM
       <View style={styles.overlay}>
         <View style={styles.card}>
           <View style={styles.iconContainer}>
-            <Ionicons name="location" size={48} color={Colors.accent} />
+            <Ionicons name="location" size={48} color={Colors.primary} />
           </View>
           
           <Text style={styles.title}>Enable Device Location</Text>
@@ -84,12 +84,12 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: Colors.surface,
-    borderRadius: 24,
+    borderRadius: Radius.modal,
     padding: 32,
     width: '100%',
     maxWidth: 400,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: Colors.primary,
     shadowOpacity: 0.2,
     shadowRadius: 20,
     elevation: 10,
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 80,
     height: 80,
-    borderRadius: 40,
+    borderRadius: Radius.pill,
     backgroundColor: Colors.surfaceUp,
     justifyContent: 'center',
     alignItems: 'center',
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   cancelBtn: {
     flex: 1,
     paddingVertical: 16,
-    borderRadius: 16,
+    borderRadius: Radius.button,
     backgroundColor: Colors.surfaceUp,
     alignItems: 'center',
   },
@@ -143,8 +143,8 @@ const styles = StyleSheet.create({
   enableBtn: {
     flex: 1,
     paddingVertical: 16,
-    borderRadius: 16,
-    backgroundColor: Colors.accent,
+    borderRadius: Radius.button,
+    backgroundColor: Colors.primary,
     alignItems: 'center',
   },
   enableBtnText: {

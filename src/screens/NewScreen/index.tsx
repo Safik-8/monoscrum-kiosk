@@ -1,8 +1,8 @@
-import React, { useRef } from 'react';
-import { View, Text, TextInput, FlatList, Pressable, ActivityIndicator, Image, StyleSheet, Modal } from 'react-native';
+import React, { useRef, useState, useCallback } from 'react';
+import { View, Text, TextInput, FlatList, Pressable, ActivityIndicator, Image, StyleSheet, Modal, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { Colors } from '../../constants/theme';
+import { Colors, Radius } from '../../constants/theme';
 import { styles } from './styles';
 import { useEnroll } from '../../hooks/useEnroll';
 import { Session } from '../../types';
@@ -12,6 +12,7 @@ export function NewScreen({ session }: { session: Session | null }) {
   const cameraRef = useRef<CameraView>(null);
   const [isModalReady, setIsModalReady] = React.useState(false);
   const [cameraPosition, setCameraPosition] = React.useState<'front' | 'back'>('front');
+  const [refreshing, setRefreshing] = useState(false);
   
   const {
     users,
@@ -24,8 +25,18 @@ export function NewScreen({ session }: { session: Session | null }) {
     success,
     capturedImage,
     captureAndEnroll,
-    cancelEnrollment
+    cancelEnrollment,
+    refreshUsers
   } = useEnroll(session);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refreshUsers();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshUsers]);
 
   React.useEffect(() => {
     if (!selectedUser) {
@@ -37,7 +48,7 @@ export function NewScreen({ session }: { session: Session | null }) {
   if (!permission) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator color={Colors.accent} size="large" />
+        <ActivityIndicator color={Colors.primary} size="large" />
       </View>
     );
   }
@@ -46,10 +57,10 @@ export function NewScreen({ session }: { session: Session | null }) {
   if (!permission?.granted) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
-        <Ionicons name="camera-outline" size={48} color={Colors.accent} style={{ marginBottom: 16 }} />
-        <Text style={styles.heroTitle}>Camera Access Required</Text>
-        <Text style={styles.heroSubtitle}>We need camera access to enroll faces.</Text>
-        <Pressable style={[styles.captureBtnInner, { width: 200, height: 48, borderRadius: 24, marginTop: 20, backgroundColor: Colors.accent }]} onPress={requestPermission}>
+        <Ionicons name="camera-outline" size={48} color={Colors.primary} style={{ marginBottom: 16 }} />
+        <Text style={styles.permTitle}>Camera Access Required</Text>
+        <Text style={styles.permSubtitle}>We need camera access to enroll faces.</Text>
+        <Pressable style={[styles.captureBtnInner, { width: 200, height: 48, borderRadius: Radius.button, marginTop: 20, backgroundColor: Colors.primary }]} onPress={requestPermission}>
           <Text style={{ color: '#fff', fontWeight: 'bold' }}>Allow Camera Access</Text>
         </Pressable>
       </View>
@@ -63,53 +74,72 @@ export function NewScreen({ session }: { session: Session | null }) {
       {/* Search and List State */}
       {!selectedUser && (
         <View style={styles.content}>
-          <View style={styles.hero}>
-            <View style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: Colors.accentDim, justifyContent: 'center', alignItems: 'center', marginRight: 16 }}>
-              <Ionicons name="scan-outline" size={28} color={Colors.accent} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.heroTitle}>Face Enrollment</Text>
-              <Text style={styles.heroSubtitle}>Select an employee to enroll their face into the Kiosk AI.</Text>
+          {/* Mobile Contacts-style Search Bar */}
+          <View style={styles.searchWrap}>
+            <View style={styles.searchBox}>
+              <Ionicons name="search" size={18} color="#94A3B8" style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search contacts..."
+                placeholderTextColor="#94A3B8"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                clearButtonMode="while-editing"
+              />
+              {!!searchQuery && (
+                <Pressable onPress={() => setSearchQuery('')} hitSlop={8}>
+                  <Ionicons name="close-circle" size={18} color="#94A3B8" />
+                </Pressable>
+              )}
             </View>
           </View>
 
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search employees..."
-            placeholderTextColor={Colors.textMuted}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-
           {busy && users.length === 0 ? (
-            <ActivityIndicator color={Colors.accent} style={{ marginTop: 40 }} />
+            <ActivityIndicator color={Colors.primary} style={{ marginTop: 40 }} />
           ) : (
             <FlatList
               data={users}
               keyExtractor={u => u._id}
               contentContainerStyle={styles.listContainer}
               showsVerticalScrollIndicator={false}
-              renderItem={({ item }) => (
-                <Pressable style={styles.userCard} onPress={() => setSelectedUser(item)}>
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  colors={[Colors.primary]}
+                  tintColor={Colors.primary}
+                />
+              }
+              renderItem={({ item, index }) => (
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.contactRow,
+                    index < users.length - 1 && styles.contactRowDivider,
+                    pressed && styles.contactRowPressed,
+                  ]}
+                  onPress={() => setSelectedUser(item)}
+                >
                   {item.profilePicture ? (
                     <Image source={{ uri: item.profilePicture }} style={styles.avatar} />
                   ) : (
                     <View style={styles.avatar}>
-                      <Text style={styles.avatarText}>{item.name?.charAt(0).toUpperCase()}</Text>
+                      <Text style={styles.avatarText}>{item.name?.charAt(0).toUpperCase() || '?'}</Text>
                     </View>
                   )}
+
                   <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Text style={styles.userName}>{item.name}</Text>
-                      {item.isFaceEnrolled && (
-                        <View style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
-                          <Text style={{ color: '#10B981', fontSize: 10, fontWeight: 'bold' }}>ENROLLED</Text>
-                        </View>
-                      )}
-                    </View>
-                    <Text style={styles.userHandle}>@{item.username || 'employee'}</Text>
+                    <Text style={styles.name}>{item.name}</Text>
+                    <Text style={styles.handle}>@{item.username || 'employee'}</Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} style={styles.chevron} />
+
+                  {item.isFaceEnrolled ? (
+                    <View style={styles.statusBadge}>
+                      <Ionicons name="checkmark-circle" size={12} color="#059669" />
+                      <Text style={styles.statusBadgeText}>Enrolled</Text>
+                    </View>
+                  ) : (
+                    <Ionicons name="chevron-forward" size={18} color="#CBD5E1" style={styles.chevron} />
+                  )}
                 </Pressable>
               )}
             />
@@ -163,7 +193,7 @@ export function NewScreen({ session }: { session: Session | null }) {
 
               {/* Error Display */}
               {error ? (
-                <View style={{ backgroundColor: 'rgba(255,0,0,0.8)', padding: 12, borderRadius: 12, marginHorizontal: 20 }}>
+                <View style={{ backgroundColor: 'rgba(255,0,0,0.8)', padding: 12, borderRadius: Radius.input, marginHorizontal: 20 }}>
                   <Text style={{ color: '#fff', textAlign: 'center', fontWeight: 'bold' }}>{error}</Text>
                 </View>
               ) : null}
@@ -172,7 +202,7 @@ export function NewScreen({ session }: { session: Session | null }) {
               <View style={styles.captureContainer}>
                 <Pressable style={styles.captureBtn} onPress={() => captureAndEnroll(cameraRef)} disabled={busy || success}>
                   <View style={styles.captureBtnInner}>
-                    {busy ? <ActivityIndicator color={Colors.accent} size="large" /> : <Ionicons name="camera" size={32} color={Colors.accent} />}
+                    {busy ? <ActivityIndicator color={Colors.primary} size="large" /> : <Ionicons name="camera" size={32} color={Colors.primary} />}
                   </View>
                 </Pressable>
               </View>

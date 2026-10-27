@@ -2,58 +2,62 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
 const getBaseApiUrl = (): string => {
-  // 1. If running in a web browser:
+  // 1. Web browser environment
   if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location) {
-    const hostname = window.location.hostname;
-    const isLocal =
-      hostname === 'localhost' ||
-      hostname === '127.0.0.1' ||
-      hostname.startsWith('192.168.') ||
-      hostname.startsWith('10.') ||
-      hostname.endsWith('.local');
-
-    if (isLocal) {
-      const port = process.env.EXPO_PUBLIC_API_PORT || '8000';
-      return `${window.location.protocol}//${hostname}:${port}/api`;
+    if (__DEV__) {
+      return process.env.EXPO_PUBLIC_LOCAL_API_URL || 'http://localhost:8000/api';
     }
-
-    if (process.env.EXPO_PUBLIC_LIVE_API_URL) {
-      return process.env.EXPO_PUBLIC_LIVE_API_URL;
-    }
-    return process.env.EXPO_PUBLIC_API_URL || `${window.location.origin}/api`;
+    return (
+      process.env.EXPO_PUBLIC_LIVE_API_URL ||
+      process.env.EXPO_PUBLIC_API_URL ||
+      `${window.location.origin}/api`
+    );
   }
 
-  // 2. Explicit Environment Variables take precedence if provided
-  if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
-  }
-  if (process.env.EXPO_PUBLIC_LOCAL_API_URL && __DEV__) {
-    return process.env.EXPO_PUBLIC_LOCAL_API_URL;
-  }
-
-  // 3. Native Development (__DEV__): Automatically detect Metro server's IP address (Expo Go on phone/emulator)
+  // 2. Development / Testing Mode (__DEV__): Expo Go / Local Emulator
   if (__DEV__) {
-    // Expo provides the host URI used by Metro (e.g. "192.168.1.23:8081")
+    // Resolve Metro host IP for physical devices running Expo Go
     const hostUri = Constants.expoConfig?.hostUri || Constants.manifest2?.extra?.expoGo?.debuggerHost;
+    let devMachineIp: string | null = null;
     if (hostUri) {
-      const devMachineIp = hostUri.split(':')[0];
-      if (devMachineIp && devMachineIp !== 'localhost' && devMachineIp !== '127.0.0.1') {
-        const port = process.env.EXPO_PUBLIC_API_PORT || '8000';
-        return `http://${devMachineIp}:${port}/api`;
+      const parsed = hostUri.split(':')[0];
+      if (parsed && parsed !== 'localhost' && parsed !== '127.0.0.1') {
+        devMachineIp = parsed;
       }
     }
 
-    // Android emulator fallback
+    // If explicitly provided via EXPO_PUBLIC_LOCAL_API_URL
+    if (process.env.EXPO_PUBLIC_LOCAL_API_URL) {
+      let url = process.env.EXPO_PUBLIC_LOCAL_API_URL;
+      // On Android or real device, "localhost" points to the phone itself. Remap to computer's IP
+      if (Platform.OS !== 'web' && (url.includes('localhost') || url.includes('127.0.0.1'))) {
+        if (devMachineIp) {
+          url = url.replace(/localhost|127\.0\.0\.1/, devMachineIp);
+        } else if (Platform.OS === 'android') {
+          url = url.replace(/localhost|127\.0\.0\.1/, '10.0.2.2');
+        }
+      }
+      return url;
+    }
+
+    if (devMachineIp) {
+      const port = process.env.EXPO_PUBLIC_API_PORT || '8000';
+      return `http://${devMachineIp}:${port}/api`;
+    }
+
+    // Android emulator loopback alias
     if (Platform.OS === 'android') {
       return 'http://10.0.2.2:8000/api';
     }
+
     return 'http://localhost:8000/api';
   }
 
-  // 4. Live / Production Native Build:
+  // 3. Enterprise Production / Standalone APK / EAS Build:
   return (
     process.env.EXPO_PUBLIC_LIVE_API_URL ||
-    'https://api.monoscrum.com/api'
+    process.env.EXPO_PUBLIC_API_URL ||
+    'http://192.168.1.50:5178/api'
   );
 };
 

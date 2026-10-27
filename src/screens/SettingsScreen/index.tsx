@@ -33,68 +33,62 @@ export function SettingsScreen({ session, busy, onLogout }: Props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Profile card */}
-      <View style={styles.profileCard}>
+      {/* Profile Row (Android Account style) */}
+      <View style={styles.profileRow}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{initial}</Text>
         </View>
-        <Text style={styles.operatorName}>{session?.operatorName || 'Kiosk Operator'}</Text>
-        <View style={styles.statusRow}>
-          <View style={styles.onlineDot} />
-          <Text style={styles.statusText}>Session Active</Text>
-        </View>
-      </View>
-
-      {/* Device info */}
-      <Text style={styles.sectionLabel}>DEVICE & SESSION INFO</Text>
-      <View style={styles.infoCard}>
-        {deviceInfo.map((row, i) => (
-          <View
-            key={i}
-            style={[styles.infoRow, i < deviceInfo.length - 1 && styles.infoRowBorder]}
-          >
-            <Text style={styles.infoLabel}>{row.label}</Text>
-            <Text style={styles.infoValue} numberOfLines={1}>{row.value}</Text>
-          </View>
-        ))}
-      </View>
-
-      {/* Kiosk Biometric Policy & Session Freeze */}
-      <Text style={styles.sectionLabel}>BIOMETRIC PUNCH POLICIES</Text>
-      <View style={styles.infoCard}>
-        <View style={[styles.infoRow, styles.infoRowBorder]}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.infoLabel}>Session Freeze Time</Text>
-            <Text style={{ fontSize: 11, color: Colors.textMuted, marginTop: 2 }}>
-              Min time before Check-Out allowed
-            </Text>
-          </View>
-          <View style={styles.prefValPill}>
-            <Text style={styles.prefVal}>60 Seconds</Text>
-          </View>
-        </View>
-
-        <View style={styles.infoRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.infoLabel}>Anti-Double Punch Throttle</Text>
-            <Text style={{ fontSize: 11, color: Colors.textMuted, marginTop: 2 }}>
-              Prevents duplicate queue bursts
-            </Text>
-          </View>
-          <View style={styles.prefValPill}>
-            <Text style={styles.prefVal}>15 Seconds</Text>
+        <View style={styles.profileDetails}>
+          <Text style={styles.operatorName}>{session?.operatorName || 'Kiosk Operator'}</Text>
+          <View style={styles.statusRow}>
+            <View style={styles.onlineDot} />
+            <Text style={styles.statusText}>Session Active</Text>
           </View>
         </View>
       </View>
 
-      {/* Preferences */}
-      <Text style={styles.sectionLabel}>PREFERENCES</Text>
+      {/* Device Info Category */}
+      <Text style={styles.sectionHeader}>Device & Session</Text>
+      {deviceInfo.map((row, i) => (
+        <View key={i} style={styles.infoRow}>
+          <Text style={styles.infoLabel}>{row.label}</Text>
+          <Text style={styles.infoValue}>{row.value}</Text>
+        </View>
+      ))}
+
+      {/* Biometric Punch Policies Category */}
+      <Text style={[styles.sectionHeader, { marginTop: 20 }]}>Biometric Punch Policies</Text>
+      
+      <View style={styles.infoRow}>
+        <View style={styles.infoLabelGroup}>
+          <Text style={styles.infoLabel}>Session Freeze Time</Text>
+          <Text style={styles.infoSub}>Min time before Check-Out allowed</Text>
+        </View>
+        <View style={styles.valBadge}>
+          <Text style={styles.valBadgeText}>60s</Text>
+        </View>
+      </View>
+
+      <View style={styles.infoRow}>
+        <View style={styles.infoLabelGroup}>
+          <Text style={styles.infoLabel}>Anti-Double Punch</Text>
+          <Text style={styles.infoSub}>Prevents duplicate queue bursts</Text>
+        </View>
+        <View style={styles.valBadge}>
+          <Text style={styles.valBadgeText}>15s</Text>
+        </View>
+      </View>
+
+      {/* Preferences Category */}
+      <Text style={[styles.sectionHeader, { marginTop: 20 }]}>Preferences</Text>
       {PREFERENCES.map((pref, i) => (
-        <View key={i} style={styles.prefRow}>
-          <Ionicons name={pref.icon as any} size={20} color={Colors.textSub} style={{ marginRight: 12 }} />
-          <Text style={styles.prefLabel}>{pref.label}</Text>
-          <View style={styles.prefValPill}>
-            <Text style={styles.prefVal}>{pref.val}</Text>
+        <View key={i} style={styles.infoRow}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name={pref.icon as any} size={20} color="#64748B" style={{ marginRight: 12 }} />
+            <Text style={styles.infoLabel}>{pref.label}</Text>
+          </View>
+          <View style={styles.valBadge}>
+            <Text style={styles.valBadgeText}>{pref.val}</Text>
           </View>
         </View>
       ))}
@@ -106,11 +100,11 @@ export function SettingsScreen({ session, busy, onLogout }: Props) {
         disabled={busy}
       >
         {busy ? (
-          <ActivityIndicator color="#FF4D4D" />
+          <ActivityIndicator color={Colors.red} />
         ) : (
           <>
-            <Ionicons name="log-out-outline" size={20} color={Colors.red} />
-            <Text style={styles.signOutText}>Sign Out</Text>
+            <Ionicons name="log-out-outline" size={18} color={Colors.red} />
+            <Text style={styles.signOutText}>Sign Out of Kiosk</Text>
           </>
         )}
       </Pressable>

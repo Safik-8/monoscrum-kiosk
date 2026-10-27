@@ -1,86 +1,107 @@
 import { StyleSheet } from 'react-native';
-import { Colors } from '../../constants/theme';
+import { Colors, Radius } from '../../constants/theme';
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.bg,
+    backgroundColor: '#FFFFFF',
   },
   content: {
-    padding: 20,
-    paddingBottom: 32,
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20, // Clean side gutters
   },
-  hero: {
-    backgroundColor: Colors.surface,
-    borderRadius: 20,
-    padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 2,
-  },
-  heroTitle: {
-    fontSize: 24,
-    fontWeight: '800',
+  permTitle: {
+    fontSize: 20,
+    fontWeight: '700',
     color: Colors.text,
-    marginBottom: 6,
+    marginBottom: 8,
   },
-  heroSubtitle: {
+  permSubtitle: {
     fontSize: 14,
     color: Colors.textSub,
     textAlign: 'center',
+    marginBottom: 20,
   },
-  searchInput: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 14,
-    padding: 16,
-    fontSize: 16,
-    color: Colors.text,
-    marginBottom: 16,
+  searchWrap: {
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
   },
-  listContainer: {
-    paddingBottom: 100,
-  },
-  userCard: {
+  searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
-    padding: 16,
-    borderRadius: 14,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    height: 42,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: Colors.text,
+    paddingVertical: 0,
+  },
+  listContainer: {
+    paddingBottom: 80,
+  },
+  contactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 4,
+    backgroundColor: '#FFFFFF',
+  },
+  contactRowDivider: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E2E8F0',
+  },
+  contactRowPressed: {
+    backgroundColor: '#F8FAFC',
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.surfaceUp,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.primaryDim,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
   },
   avatarText: {
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: '700',
-    color: Colors.accent,
+    color: Colors.primary,
   },
-  userName: {
+  name: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: Colors.text,
-    marginBottom: 2,
+    letterSpacing: -0.2,
   },
-  userHandle: {
+  handle: {
     fontSize: 13,
-    color: Colors.textSub,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    gap: 4,
+    marginRight: 4,
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#059669',
   },
   chevron: {
     marginLeft: 'auto',
@@ -104,7 +125,7 @@ export const styles = StyleSheet.create({
   backBtn: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: Radius.pill,
     backgroundColor: 'rgba(0,0,0,0.5)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -113,7 +134,7 @@ export const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     paddingHorizontal: 16,
     paddingVertical: 11,
-    borderRadius: 20,
+    borderRadius: Radius.pill,
   },
   enrollTargetText: {
     color: '#fff',
@@ -126,7 +147,7 @@ export const styles = StyleSheet.create({
   captureBtn: {
     width: 80,
     height: 80,
-    borderRadius: 40,
+    borderRadius: Radius.pill,
     backgroundColor: 'rgba(255,255,255,0.3)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -134,7 +155,7 @@ export const styles = StyleSheet.create({
   captureBtnInner: {
     width: 64,
     height: 64,
-    borderRadius: 32,
+    borderRadius: Radius.pill,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
@@ -149,10 +170,10 @@ export const styles = StyleSheet.create({
   toastContent: {
     backgroundColor: Colors.surface,
     padding: 32,
-    borderRadius: 24,
+    borderRadius: Radius.modal,
     alignItems: 'center',
     width: '80%',
-    shadowColor: Colors.accent,
+    shadowColor: Colors.primary,
     shadowOpacity: 0.2,
     shadowRadius: 20,
     elevation: 10,

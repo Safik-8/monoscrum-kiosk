@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, Image, Animated, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Logo } from '../../components/Logo';
+import { Colors } from '../../constants/theme';
 import { styles } from './styles';
 
 const LOADER_ILLUSTRATION = require('../../../assets/kiosk-loader-illustration.jpg');
@@ -66,11 +67,10 @@ export function LoadingScreen({ statusText = 'Connecting to MonoScrum...' }: Loa
 
         {/* Brand presentation inspired by the reference layout */}
         <View style={styles.brandRow}>
-          <Logo size={42} />
+          <Logo size={56} />
           <View>
             <View style={styles.brandTextWrapper}>
-              <Text style={styles.brandFirst}>MONO</Text>
-              <Text style={styles.brandSecond}>SCRUM</Text>
+              <Text style={styles.brandFirst}>monoscrum</Text>
             </View>
             <Text style={styles.tagline}>Kiosk · Attendance</Text>
           </View>
@@ -79,7 +79,7 @@ export function LoadingScreen({ statusText = 'Connecting to MonoScrum...' }: Loa
 
       {/* Bottom Loading Indicator & Progress Message */}
       <Animated.View style={[styles.bottomSection, { opacity: fadeAnim }]}>
-        <ActivityIndicator color="#0284C7" size="small" style={styles.spinner} />
+        <ActivityIndicator color={Colors.primary} size="small" style={styles.spinner} />
         <Text style={styles.statusText}>{statusText}</Text>
         <Text style={styles.versionText}>v1.0 · Smart Kiosk Platform</Text>
       </Animated.View>

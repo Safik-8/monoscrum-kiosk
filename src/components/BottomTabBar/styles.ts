@@ -1,23 +1,18 @@
 import { StyleSheet } from 'react-native';
-import { Colors, Layout } from '../../constants/theme';
+import { Colors, Radius } from '../../constants/theme';
 
 export const styles = StyleSheet.create({
   bar: {
     position: 'absolute',
-    bottom: 24,
-    left: 24,
-    right: 24,
-    height: 72,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 64,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.surface,
-    borderRadius: 36,
-    paddingHorizontal: 8,
-    shadowColor: Colors.accent,
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0', // border-slate-200 only, no shadows
   },
   tab: {
     flex: 1,
@@ -28,7 +23,7 @@ export const styles = StyleSheet.create({
   iconWrap: {
     width: 60,
     height: 32,
-    borderRadius: 16,
+    borderRadius: Radius.button,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
@@ -46,11 +41,14 @@ export const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     color: Colors.tabInactive,
-    fontWeight: '600',
+    fontWeight: '500',
+    textAlign: 'center',
+    includeFontPadding: false,
+    letterSpacing: -0.1,
   },
   labelActive: {
     color: Colors.tabActive,
-    fontWeight: 'bold',
+    fontWeight: '500',
   },
 
 });

@@ -5,12 +5,16 @@ export const Colors = {
   bg: '#F4F7FF',
   surface: '#FFFFFF',
   surfaceUp: '#EEF3FF',
-  border: '#DDE4F0',
+  border: '#E2E8F0', // border-slate-200
+  borderSlate: '#E2E8F0',
 
-  // Brand accent
+  // Brand accent & Primary color (Blue)
+  primary: '#1E56D9',
   accent: '#1E56D9',
   accentGlow: 'rgba(30,86,217,0.20)',
   accentDim: '#DCE8FF',
+  primaryDim: '#DCE8FF',
+  primaryGlow: 'rgba(30,86,217,0.20)',
 
   // Status
   green: '#16A34A',
@@ -45,10 +49,18 @@ export const Spacing = {
 } as const;
 
 export const Radius = {
+  xs: 4,
   sm: 8,
   md: 12,
   lg: 16,
   xl: 20,
+  xxl: 24,
+  card: 20,
+  modal: 24,
+  button: 14,
+  input: 14,
+  badge: 8,
+  pill: 999,
   full: 999,
 } as const;
 

@@ -7,21 +7,22 @@ import {
   Image,
   Dimensions,
   TouchableOpacity,
-  ScrollView,
   Modal,
   Animated,
   Platform,
   Easing,
+  StatusBar,
 } from 'react-native';
-import { CameraView } from 'expo-camera';
-import { Colors } from '../../constants/theme';
+import { CameraView, CameraType } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
-import { API_URL } from '../../constants/config';
 import { fetchWithTimeout, parseResponse } from '../../lib/http';
+import { API_URL } from '../../constants/config';
 import { Session } from '../../types';
+import { Colors, Radius } from '../../constants/theme';
+import { Logo } from '../../components/Logo';
 
 const { width } = Dimensions.get('window');
-const SCANNER_SIZE = width * 0.8;
+const VIEWFINDER_SIZE = Math.min(width - 48, 380);
 
 interface Props {
   session?: Session | null;
@@ -33,6 +34,9 @@ interface Props {
   scanResult?: any;
   onClearScanResult?: () => void;
   onScan: (photoOutput: any) => void;
+  onNavigateHistory?: () => void;
+  onBack?: () => void;
+  onOpenDrawer?: () => void;
 }
 
 export function ScanScreen({
@@ -45,12 +49,17 @@ export function ScanScreen({
   scanResult,
   onClearScanResult,
   onScan,
+  onNavigateHistory,
+  onBack,
+  onOpenDrawer,
 }: Props) {
+  const initial = session?.operatorName
+    ? session.operatorName.charAt(0).toUpperCase()
+    : 'K';
+  const [facing, setFacing] = useState<CameraType>('front');
   const [stats, setStats] = useState<any>(null);
   const successAnim = useRef(new Animated.Value(0)).current;
   const spinAnim = useRef(new Animated.Value(0)).current;
-
-  // Expo Camera Setup
   const cameraRef = useRef<CameraView>(null);
 
   useEffect(() => {
@@ -71,18 +80,15 @@ export function ScanScreen({
 
   const spin = spinAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['0deg', '360deg']
+    outputRange: ['0deg', '360deg'],
   });
-
-
 
   useEffect(() => {
     if (scanResult && scanResult.match) {
-      console.log(`[ScanScreen] Scan successful! Match confidence: ${scanResult.confidence}`);
       Animated.sequence([
-        Animated.timing(successAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
-        Animated.delay(4000),
-        Animated.timing(successAnim, { toValue: 0, duration: 400, useNativeDriver: true })
+        Animated.timing(successAnim, { toValue: 1, duration: 350, useNativeDriver: true }),
+        Animated.delay(3500),
+        Animated.timing(successAnim, { toValue: 0, duration: 350, useNativeDriver: true }),
       ]).start();
     }
   }, [scanResult]);
@@ -96,7 +102,7 @@ export function ScanScreen({
   const fetchBranchStats = async () => {
     try {
       const response = await fetchWithTimeout(`${API_URL}/kiosk/branch-stats`, {
-        headers: { Authorization: `Bearer ${session?.accessToken}` }
+        headers: { Authorization: `Bearer ${session?.accessToken}` },
       });
       const data = await parseResponse(response);
       if ((data as any).success) {
@@ -107,37 +113,34 @@ export function ScanScreen({
     }
   };
 
-  // If there's an error, dismiss it quickly to resume scanning
   useEffect(() => {
     if (error && onClearScanResult) {
-      console.log(`[ScanScreen] Error displayed to user: ${error}. Clearing in 2.5s...`);
       const timer = setTimeout(() => {
-        onClearScanResult(); 
-      }, 2500);
+        onClearScanResult();
+      }, 3000);
       return () => clearTimeout(timer);
     }
   }, [error, onClearScanResult]);
 
-
-
-  // ── Auto-Dismiss Success Screen ───────────────────────────────────────────
   useEffect(() => {
     if (scanResult && onClearScanResult) {
       const timer = setTimeout(() => {
         onClearScanResult();
-      }, 2500); // 2.5s allows employee to see result before next person scans
+      }, 3500);
       return () => clearTimeout(timer);
     }
   }, [scanResult, onClearScanResult]);
 
-
+  const toggleFacing = () => {
+    setFacing((current) => (current === 'front' ? 'back' : 'front'));
+  };
 
   if (!hasCameraPermission) {
     return (
       <View style={styles.permCenter}>
-        <Ionicons name="camera-outline" size={48} color={Colors.accent} style={{ marginBottom: 16 }} />
+        <Ionicons name="camera-outline" size={48} color={Colors.primary} style={{ marginBottom: 16 }} />
         <Text style={styles.permTitle}>Camera Access Required</Text>
-        <Text style={styles.permText}>MonoScrum Kiosk needs camera access.</Text>
+        <Text style={styles.permText}>MonoScrum Kiosk needs camera access to verify attendance.</Text>
         <Pressable style={styles.permBtn} onPress={requestCameraPermission}>
           <Text style={styles.permBtnText}>Allow Camera Access</Text>
         </Pressable>
@@ -145,152 +148,182 @@ export function ScanScreen({
     );
   }
 
-
-
   return (
-    <View style={styles.container}>
-      <View style={styles.hudContainer}>
-        <Text style={styles.title}>FACIAL BIOMETRIC</Text>
-        <Text style={styles.subtitle}>AUTHENTICATION</Text>
+    <View style={styles.screen}>
+      {/* ── Camera Viewfinder Area ── */}
+      <View style={styles.viewfinderContainer}>
+        {/* Guideline Hint directly above the rectangle camera card */}
+        <View style={styles.guidelineHint}>
+          <Ionicons name="shield-checkmark-outline" size={16} color={Colors.primary} />
+          <Text style={styles.guidelineText}>Make sure the image is clear and well lit</Text>
+        </View>
 
-        <View style={styles.scannerWrapper}>
-          <View style={styles.cameraContainer}>
-            {capturedImage ? (
-              <Image source={{ uri: capturedImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-            ) : (
-              <CameraView
-                ref={cameraRef}
-                style={StyleSheet.absoluteFill}
-                facing="front"
-              />
-            )}
-          </View>
-          <View style={styles.scannerRing} />
+        <View style={styles.viewfinderCard}>
+          {capturedImage ? (
+            <Image source={{ uri: capturedImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          ) : (
+            <CameraView
+              ref={cameraRef}
+              style={StyleSheet.absoluteFill}
+              facing={facing}
+            />
+          )}
+
+          {/* Frosted / Subtle Vignette Overlay */}
+          <View style={styles.viewfinderTint} pointerEvents="none" />
+
+          {/* 4 Corner Frame Brackets */}
+          <View style={[styles.cornerBracket, styles.bracketTopLeft]} pointerEvents="none" />
+          <View style={[styles.cornerBracket, styles.bracketTopRight]} pointerEvents="none" />
+          <View style={[styles.cornerBracket, styles.bracketBottomLeft]} pointerEvents="none" />
+          <View style={[styles.cornerBracket, styles.bracketBottomRight]} pointerEvents="none" />
+
+          {/* Loading Ring Indicator when busy */}
           {busy && (
-            <Animated.View style={[styles.premiumLoader, { transform: [{ rotate: spin }] }]} />
+            <View style={styles.busyOverlay} pointerEvents="none">
+              <Animated.View style={[styles.busySpinner, { transform: [{ rotate: spin }] }]} />
+              <Text style={styles.busyText}>Verifying Face...</Text>
+            </View>
           )}
         </View>
-
-        <View style={styles.statsContainer}>
-          <View style={styles.statBoxLeft}>
-            <Text style={styles.statLabel}>LIVENESS DETECTED</Text>
-            <Text style={styles.statValue}>[ACTIVE]</Text>
-          </View>
-          <View style={styles.statBoxRight}>
-            <Text style={styles.statLabel}>ANTI-SPOOFING</Text>
-            <Text style={styles.statValue}>[PASSED]</Text>
-          </View>
-        </View>
-        <View style={[styles.statsContainer, { marginTop: -10 }]}>
-          <View style={styles.statBoxLeft}>
-            <Text style={styles.statLabel}>CHECKED IN</Text>
-            <Text style={styles.statValue}>[{stats ? stats.checkedIn : '...'}/{stats ? stats.totalEmployees : '...'}]</Text>
-          </View>
-          <View style={styles.statBoxRight}>
-            <Text style={styles.statLabel}>YET TO ARRIVE</Text>
-            <Text style={styles.statValue}>[{stats ? stats.notYetIn : '...'}]</Text>
-          </View>
-        </View>
-
-        <Text style={styles.confidenceScore}>
-          {busy ? 'ANALYZING...' : (scanResult ? `CONFIDENCE SCORE: ${(scanResult.confidence * 100).toFixed(1)}%` : 'WAITING FOR FACE...')}
-        </Text>
-
-        <Text style={styles.statusVerified}>
-          {scanResult ? '[Status: Verified]' : '[Status: Scanning]'}
-        </Text>
-
-        <Text style={styles.syncText}>
-          {scanResult ? '✅ CRYPTOGRAPHIC KEY SYNC ✅' : 'CRYPTOGRAPHIC KEY SYNC'}
-        </Text>
-        <Text style={styles.syncSubtext}>
-          {scanResult ? '[SYNCED]' : '[WAITING]'}
-        </Text>
-
-        <Text style={styles.authenticatingText}>
-          {busy ? 'AUTHENTICATING FOR TRANSACTION...' : 'POSITION FACE IN RING AND PRESS CAPTURE'}
-        </Text>
-
       </View>
 
-      {!busy && !scanResult && !error && !capturedImage && (
-        <View style={styles.captureButtonWrapper}>
-          <TouchableOpacity 
-            style={styles.captureButton}
-            onPress={() => onScan(cameraRef.current)}
+      {/* ── Bottom Controls ── */}
+      <View style={styles.controlsRow}>
+        {/* Left: History Button */}
+        <View style={styles.controlItem}>
+          <TouchableOpacity
+            style={styles.circleActionButton}
+            onPress={onNavigateHistory}
+            activeOpacity={0.75}
           >
-            <Ionicons name="camera" size={32} color="#050a11" />
+            <Ionicons name="time-outline" size={24} color={Colors.primary} />
+          </TouchableOpacity>
+          <Text style={styles.controlLabel}>History</Text>
+        </View>
+
+        {/* Center: Shutter Capture Button with Primary Blue Accent Ring */}
+        <View style={styles.shutterWrapper}>
+          <TouchableOpacity
+            style={[styles.shutterOuterRing, busy && styles.shutterDisabled]}
+            disabled={busy}
+            onPress={() => onScan(cameraRef.current)}
+            activeOpacity={0.85}
+          >
+            <View style={styles.shutterInnerButton} />
           </TouchableOpacity>
         </View>
-      )}
 
-      {/* Success / Status Modal with Previous Operation Transparency */}
+        {/* Right: Flip Camera Button */}
+        <View style={styles.controlItem}>
+          <TouchableOpacity
+            style={styles.circleActionButton}
+            onPress={toggleFacing}
+            activeOpacity={0.75}
+          >
+            <Ionicons name="sync-outline" size={24} color={Colors.primary} />
+          </TouchableOpacity>
+          <Text style={styles.controlLabel}>Flip</Text>
+        </View>
+      </View>
+
+      {/* ── Attendance Verification Success Modal ── */}
       <Modal visible={!!scanResult} transparent animationType="fade">
         <View style={styles.modalBg}>
-          <Animated.View style={[
-            styles.modalContent, 
-            { 
-              borderColor: scanResult?.action === 'CHECKED_OUT' ? '#ffaa00' : '#00ff88', 
-              opacity: successAnim, 
-              transform: [{ scale: successAnim.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) }] 
-            }
-          ]}>
-            <Ionicons 
-              name={
-                scanResult?.action === 'CHECKED_OUT' 
-                  ? "exit-outline" 
-                  : scanResult?.action === 'REVERIFIED' 
-                  ? "checkmark-done-circle-outline" 
-                  : "checkmark-circle"
-              } 
-              size={56} 
-              color={scanResult?.action === 'CHECKED_OUT' ? '#ffaa00' : '#00ff88'} 
-              style={{ marginBottom: 8 }} 
-            />
-            
-            <Text style={styles.resultName}>{scanResult?.user?.fullName || 'Verified Employee'}</Text>
-            
+          <Animated.View
+            style={[
+              styles.modalCard,
+              {
+                opacity: successAnim,
+                transform: [
+                  {
+                    scale: successAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.9, 1],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.modalIconWrap,
+                {
+                  backgroundColor:
+                    scanResult?.action === 'CHECKED_OUT'
+                      ? 'rgba(234, 88, 12, 0.12)'
+                      : Colors.primaryDim,
+                },
+              ]}
+            >
+              <Ionicons
+                name={
+                  scanResult?.action === 'CHECKED_OUT'
+                    ? 'exit-outline'
+                    : scanResult?.action === 'REVERIFIED'
+                    ? 'checkmark-done-circle-outline'
+                    : 'checkmark-circle'
+                }
+                size={44}
+                color={scanResult?.action === 'CHECKED_OUT' ? '#ea580c' : Colors.primary}
+              />
+            </View>
+
+            <Text style={styles.resultTitle}>
+              {scanResult?.user?.fullName || 'Verified Employee'}
+            </Text>
+
             {scanResult?.user?.department && (
               <Text style={styles.resultDept}>
-                {scanResult.user.designation?.title || 'Staff'} • {scanResult.user.department?.name || 'MonoScrum'}
+                {scanResult.user.designation?.title || 'Staff'} •{' '}
+                {scanResult.user.department?.name || 'MonoScrum'}
               </Text>
             )}
 
-            <View style={[
-              styles.statusPill, 
-              { 
-                backgroundColor: scanResult?.action === 'CHECKED_OUT' ? 'rgba(255,170,0,0.15)' : 'rgba(0,255,136,0.15)',
-                borderColor: scanResult?.action === 'CHECKED_OUT' ? '#ffaa00' : '#00ff88',
-                marginTop: 10,
-                paddingVertical: 6,
-                paddingHorizontal: 16
-              }
-            ]}>
-              <Text style={[
-                styles.resultStatus, 
-                { color: scanResult?.action === 'CHECKED_OUT' ? '#ffaa00' : '#00ff88', marginTop: 0 }
-              ]}>
-                {scanResult?.action === 'REVERIFIED' || scanResult?.attendance?.status === 'REVERIFIED'
-                  ? '🔄 REVERIFIED (ALREADY IN)'
+            <View
+              style={[
+                styles.statusBadge,
+                {
+                  backgroundColor:
+                    scanResult?.action === 'CHECKED_OUT'
+                      ? '#fff7ed'
+                      : Colors.surfaceUp,
+                  borderColor:
+                    scanResult?.action === 'CHECKED_OUT' ? '#fdba74' : Colors.border,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.statusBadgeText,
+                  {
+                    color:
+                      scanResult?.action === 'CHECKED_OUT' ? '#c2410c' : Colors.primary,
+                  },
+                ]}
+              >
+                {scanResult?.action === 'REVERIFIED' ||
+                scanResult?.attendance?.status === 'REVERIFIED'
+                  ? 'Reverified (Already Checked In)'
                   : scanResult?.action === 'CHECKED_OUT'
-                  ? '👋 CHECKED OUT'
-                  : '✅ CHECKED IN'}
+                  ? 'Checked Out Successfully'
+                  : 'Checked In Successfully'}
               </Text>
             </View>
 
-            {/* Previous Operation & Workday Insight */}
             {scanResult?.previousOperation && (
-              <View style={styles.operationHistoryBox}>
-                <View style={styles.historyRow}>
-                  <Ionicons name="time-outline" size={16} color="#8b9bb4" />
-                  <Text style={styles.historyText}>
+              <View style={styles.opHistoryBox}>
+                <View style={styles.opHistoryRow}>
+                  <Ionicons name="time-outline" size={16} color={Colors.textSub} />
+                  <Text style={styles.opHistoryText}>
                     {scanResult.previousOperation.summary}
                   </Text>
                 </View>
                 {scanResult?.totalHoursToday && (
-                  <View style={[styles.historyRow, { marginTop: 4 }]}>
-                    <Ionicons name="briefcase-outline" size={16} color="#00ffff" />
-                    <Text style={[styles.historyText, { color: '#00ffff', fontWeight: 'bold' }]}>
+                  <View style={[styles.opHistoryRow, { marginTop: 4 }]}>
+                    <Ionicons name="briefcase-outline" size={16} color={Colors.primary} />
+                    <Text style={[styles.opHistoryText, { color: Colors.primary, fontWeight: '600' }]}>
                       Total Today: {scanResult.totalHoursToday}
                     </Text>
                   </View>
@@ -298,32 +331,26 @@ export function ScanScreen({
               </View>
             )}
 
-            <Text style={{ color: '#8b9bb4', marginTop: 12, fontSize: 13, textAlign: 'center' }}>
-              Auto-ready in 2s for next employee
-            </Text>
-
-            <TouchableOpacity onPress={onClearScanResult} style={styles.dismissBtn}>
-              <Text style={styles.dismissBtnText}>Next Employee</Text>
+            <TouchableOpacity onPress={onClearScanResult} style={styles.continueBtn}>
+              <Text style={styles.continueBtnText}>Done</Text>
             </TouchableOpacity>
           </Animated.View>
         </View>
       </Modal>
 
-      {/* Error Modal */}
+      {/* ── Error Modal ── */}
       <Modal visible={!!error} transparent animationType="fade">
         <View style={styles.modalBg}>
-          <View style={styles.modalContent}>
-            <Ionicons name="alert-circle-outline" size={56} color="#ff3333" />
-            <Text style={styles.modalTitle}>Scan Unsuccessful</Text>
-            <Text style={styles.modalDesc}>{error}</Text>
-            <TouchableOpacity style={styles.modalBtn} onPress={() => {
-              if (onClearScanResult) onClearScanResult();
-            }}>
-              <Text style={styles.modalBtnText}>Ready for Next Scan</Text>
+          <View style={styles.errorCard}>
+            <View style={styles.errorIconWrap}>
+              <Ionicons name="alert-circle-outline" size={42} color={Colors.red} />
+            </View>
+            <Text style={styles.errorTitle}>Verification Failed</Text>
+            <Text style={styles.errorDesc}>{error}</Text>
+
+            <TouchableOpacity style={styles.errorBtn} onPress={onClearScanResult}>
+              <Text style={styles.errorBtnText}>Try Again</Text>
             </TouchableOpacity>
-            <Text style={styles.modalSubText}>
-              Not registered yet? An admin can enroll you under the 'Enroll' tab in seconds.
-            </Text>
           </View>
         </View>
       </Modal>
@@ -332,140 +359,354 @@ export function ScanScreen({
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    backgroundColor: '#050a11',
+    backgroundColor: Colors.bg,
+    justifyContent: 'space-between',
+    paddingTop: 10,
+    paddingBottom: 76, // Clearance above the fixed bottom tab bar
+  },
+
+  // ── Viewfinder Area ──
+  viewfinderContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    flex: 1,
+  },
+  viewfinderCard: {
+    width: VIEWFINDER_SIZE,
+    height: VIEWFINDER_SIZE * 1.08,
+    borderRadius: Radius.card,
+    overflow: 'hidden',
+    backgroundColor: '#1E293B',
+    position: 'relative',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  viewfinderTint: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(0, 0, 0, 0.12)',
+  },
+
+  // ── Corner Brackets ──
+  cornerBracket: {
+    position: 'absolute',
+    width: 38,
+    height: 38,
+    borderColor: '#ffffff',
+  },
+  bracketTopLeft: {
+    top: 22,
+    left: 22,
+    borderTopWidth: 3.5,
+    borderLeftWidth: 3.5,
+    borderTopLeftRadius: Radius.lg,
+  },
+  bracketTopRight: {
+    top: 22,
+    right: 22,
+    borderTopWidth: 3.5,
+    borderRightWidth: 3.5,
+    borderTopRightRadius: Radius.lg,
+  },
+  bracketBottomLeft: {
+    bottom: 22,
+    left: 22,
+    borderBottomWidth: 3.5,
+    borderLeftWidth: 3.5,
+    borderBottomLeftRadius: Radius.lg,
+  },
+  bracketBottomRight: {
+    bottom: 22,
+    right: 22,
+    borderBottomWidth: 3.5,
+    borderRightWidth: 3.5,
+    borderBottomRightRadius: Radius.lg,
+  },
+
+  // ── Center Helper Badge ──
+  centerTargetContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 30,
+  },
+  centerCameraBadge: {
+    width: 64,
+    height: 64,
+    borderRadius: Radius.pill,
+    backgroundColor: 'rgba(255, 255, 255, 0.28)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  centerHelperText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.45)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+
+  // ── Busy State ──
+  busyOverlay: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(13, 27, 62, 0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  busySpinner: {
+    width: 48,
+    height: 48,
+    borderRadius: Radius.pill,
+    borderWidth: 4,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+    borderTopColor: Colors.primary,
+    marginBottom: 12,
+  },
+  busyText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+
+  // ── Bottom Action Controls ──
+  controlsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    paddingHorizontal: 30,
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  controlItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 80,
+  },
+  circleActionButton: {
+    width: 54,
+    height: 54,
+    borderRadius: Radius.pill,
+    backgroundColor: Colors.surfaceUp,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  controlLabel: {
+    fontSize: 13,
+    color: Colors.textSub,
+    fontWeight: '600',
+    textAlign: 'center',
+    includeFontPadding: false,
+  },
+  shutterWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shutterOuterRing: {
+    width: 82,
+    height: 82,
+    borderRadius: Radius.pill,
+    borderWidth: 3,
+    borderColor: Colors.primaryDim,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  shutterInnerButton: {
+    width: 66,
+    height: 66,
+    borderRadius: Radius.pill,
+    backgroundColor: Colors.primary,
+  },
+  shutterDisabled: {
+    opacity: 0.6,
+  },
+
+  // ── Guideline Notice Hint (Snug right above camera rectangle) ──
+  guidelineHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    paddingHorizontal: 16,
+    marginBottom: 10,
+  },
+  guidelineText: {
+    fontSize: 13,
+    color: '#475569',
+    fontWeight: '500',
+    includeFontPadding: false,
+    letterSpacing: -0.1,
+  },
+
+  // ── Modal Styles ──
+  modalBg: {
+    flex: 1,
+    backgroundColor: 'rgba(13, 27, 62, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 24,
   },
-  hudContainer: {
-    width: '90%',
-    backgroundColor: 'rgba(15, 25, 40, 0.85)',
-    borderRadius: 20,
-    padding: 20,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 255, 255, 0.2)',
-    shadowColor: '#00ffff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-  },
-  title: { color: '#ffffff', fontSize: 20, fontWeight: 'bold', letterSpacing: 1 },
-  subtitle: { color: '#ffffff', fontSize: 20, fontWeight: 'bold', letterSpacing: 1, marginBottom: 20 },
-  scannerWrapper: {
-    width: SCANNER_SIZE, height: SCANNER_SIZE,
-    borderRadius: SCANNER_SIZE / 2,
-    justifyContent: 'center', alignItems: 'center', marginBottom: 20,
-  },
-  cameraContainer: {
-    width: '100%', height: '100%',
-    borderRadius: SCANNER_SIZE / 2,
-    overflow: 'hidden', position: 'absolute',
-  },
-  scannerRing: {
-    width: '100%', height: '100%',
-    borderRadius: SCANNER_SIZE / 2,
-    borderWidth: 4, borderColor: '#00ffff',
-    position: 'absolute',
-    shadowColor: '#00ffff', shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8, shadowRadius: 15,
-  },
-  premiumLoader: {
-    width: '100%', height: '100%',
-    borderRadius: SCANNER_SIZE / 2,
-    position: 'absolute',
-    borderWidth: 8,
-    borderColor: 'transparent',
-    borderTopColor: '#ffaa00',
-    borderRightColor: '#ffaa00',
-    shadowColor: '#ffaa00',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 25,
-  },
-  statsContainer: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    width: '100%', paddingHorizontal: 10, marginBottom: 20,
-  },
-  statBoxLeft: { alignItems: 'flex-start' },
-  statBoxRight: { alignItems: 'flex-end' },
-  statLabel: { color: '#5b98a3', fontSize: 10, letterSpacing: 0.5 },
-  statValue: { color: '#00ffff', fontSize: 10, fontWeight: 'bold', letterSpacing: 0.5 },
-  confidenceScore: {
-    color: '#00ffff', fontSize: 16, fontWeight: 'bold', marginBottom: 10,
-    textShadowColor: 'rgba(0, 255, 255, 0.5)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 10,
-  },
-  statusVerified: { color: '#00ffff', fontSize: 12, marginBottom: 5 },
-  syncText: { color: '#ffffff', fontSize: 12, fontWeight: 'bold' },
-  syncSubtext: { color: '#00ffff', fontSize: 12, marginBottom: 15 },
-  authenticatingText: { color: '#8b9bb4', fontSize: 12, marginBottom: 20 },
-  pinLink: { color: '#8b9bb4', fontSize: 14, marginTop: 10 },
-  permCenter: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#050a11' },
-  permTitle: { fontSize: 20, color: 'white', marginBottom: 10 },
-  permText: { fontSize: 14, color: '#8b9bb4', textAlign: 'center', marginHorizontal: 40, marginBottom: 20 },
-  permBtn: { backgroundColor: '#00ffff', padding: 12, borderRadius: 8 },
-  permBtnText: { color: '#050a11', fontWeight: 'bold' },
-  miniResultBox: {
-    marginTop: 10,
-    padding: 10,
-    backgroundColor: 'rgba(0, 255, 136, 0.1)',
-    borderWidth: 1,
-    borderColor: '#00ff88',
-    borderRadius: 8,
-    alignItems: 'center',
-    width: '100%'
-  },
-  resultName: { color: 'white', fontSize: 20, fontWeight: 'bold' },
-  resultDept: { color: '#8b9bb4', fontSize: 14, marginTop: 4 },
-  resultStatus: { color: '#00ff88', fontSize: 16, marginTop: 8, fontWeight: 'bold' },
-  dismissBtn: { marginTop: 15, paddingVertical: 8, paddingHorizontal: 20, backgroundColor: 'rgba(0,255,136,0.2)', borderRadius: 20, borderWidth: 1, borderColor: '#00ff88' },
-  dismissBtnText: { color: '#00ff88', fontSize: 14, fontWeight: 'bold' },
-  modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { width: '80%', backgroundColor: '#0f1928', padding: 25, borderRadius: 20, alignItems: 'center', borderWidth: 1, borderColor: '#ff3333' },
-  modalTitle: { color: '#ffffff', fontSize: 22, fontWeight: 'bold', marginTop: 15, marginBottom: 10 },
-  modalDesc: { color: '#8b9bb4', fontSize: 15, textAlign: 'center', marginBottom: 20 },
-  modalBtn: { backgroundColor: '#ff3333', paddingVertical: 12, paddingHorizontal: 30, borderRadius: 25 },
-  modalBtnText: { color: '#ffffff', fontSize: 16, fontWeight: 'bold' },
-  modalSubText: { color: '#5b98a3', fontSize: 12, textAlign: 'center', marginTop: 15 },
-  captureButtonWrapper: {
-    position: 'absolute',
-    bottom: 120, /* Pushed up higher to clear the tab bar */
-    alignItems: 'center',
+  modalCard: {
     width: '100%',
-    zIndex: 100, /* Ensure it sits on top */
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.modal,
+    padding: 24,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
-  operationHistoryBox: {
+  modalIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  resultTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.text,
+    textAlign: 'center',
+  },
+  resultDept: {
+    fontSize: 14,
+    color: Colors.textSub,
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  statusBadge: {
     marginTop: 14,
-    padding: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: Radius.pill,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  statusBadgeText: {
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  opHistoryBox: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: Colors.surfaceUp,
+    borderRadius: Radius.button,
+    borderWidth: 1,
+    borderColor: Colors.border,
     width: '100%',
   },
-  historyRow: {
+  opHistoryRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  historyText: {
-    color: '#cbd5e1',
+  opHistoryText: {
     fontSize: 13,
-    fontWeight: '500',
+    color: Colors.textSub,
   },
-  captureButton: {
-    backgroundColor: '#00ffff',
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    justifyContent: 'center',
+  continueBtn: {
+    marginTop: 20,
+    backgroundColor: Colors.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 36,
+    borderRadius: Radius.button,
+    width: '100%',
     alignItems: 'center',
-    borderWidth: 4,
-    borderColor: 'rgba(0, 255, 255, 0.3)',
-    shadowColor: '#00ffff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 15,
+  },
+  continueBtnText: {
+    color: Colors.white,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+
+  // ── Error Modal ──
+  errorCard: {
+    width: '100%',
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.modal,
+    padding: 24,
+    alignItems: 'center',
+  },
+  errorIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: Radius.pill,
+    backgroundColor: '#fee2e2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.red,
+  },
+  errorDesc: {
+    fontSize: 14,
+    color: Colors.textSub,
+    textAlign: 'center',
+    marginTop: 8,
+    lineHeight: 20,
+  },
+  errorBtn: {
+    marginTop: 20,
+    backgroundColor: Colors.red,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: Radius.button,
+    width: '100%',
+    alignItems: 'center',
+  },
+  errorBtnText: {
+    color: Colors.white,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+
+  // ── Permission ──
+  permCenter: {
+    flex: 1,
+    backgroundColor: Colors.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 30,
+  },
+  permTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.text,
+    marginBottom: 8,
+  },
+  permText: {
+    fontSize: 14,
+    color: Colors.textSub,
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  permBtn: {
+    backgroundColor: Colors.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: Radius.button,
+  },
+  permBtnText: {
+    color: Colors.white,
+    fontWeight: '600',
+    fontSize: 15,
   },
 });

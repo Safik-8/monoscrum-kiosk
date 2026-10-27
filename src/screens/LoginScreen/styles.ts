@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { Colors } from '../../constants/theme';
+import { Colors, Radius } from '../../constants/theme';
 
 export const styles = StyleSheet.create({
   container: {
@@ -10,11 +10,11 @@ export const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: Colors.surface,
-    borderRadius: 24,
+    borderRadius: Radius.modal,
     padding: 28,
     borderWidth: 1,
     borderColor: Colors.border,
-    shadowColor: '#000',
+    shadowColor: Colors.primary,
     shadowOpacity: 0.08,
     shadowRadius: 24,
     elevation: 6,
@@ -27,9 +27,9 @@ export const styles = StyleSheet.create({
   },
   brandName: {
     fontSize: 22,
-    fontWeight: '800',
+    fontWeight: '500',
     color: Colors.text,
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
   },
   brandTag: {
     fontSize: 10,
@@ -68,7 +68,7 @@ export const styles = StyleSheet.create({
     backgroundColor: Colors.bg,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 12,
+    borderRadius: Radius.input,
     padding: 14,
     fontSize: 15,
     color: Colors.text,
@@ -90,7 +90,7 @@ export const styles = StyleSheet.create({
     backgroundColor: 'rgba(220,38,38,0.07)',
     borderWidth: 1,
     borderColor: 'rgba(220,38,38,0.25)',
-    borderRadius: 10,
+    borderRadius: Radius.sm,
     padding: 12,
     marginBottom: 16,
   },
@@ -104,12 +104,12 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   loginBtn: {
-    backgroundColor: Colors.accent,
-    borderRadius: 14,
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.button,
     minHeight: 52,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: Colors.accent,
+    shadowColor: Colors.primary,
     shadowOpacity: 0.35,
     shadowRadius: 12,
     elevation: 4,

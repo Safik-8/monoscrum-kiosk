@@ -1,8 +1,8 @@
 import { Dimensions, StyleSheet, Platform, StatusBar } from 'react-native';
-import { Colors, Layout } from '../../constants/theme';
+import { Colors, Layout, Radius } from '../../constants/theme';
 import { DRAWER_WIDTH_RATIO } from '../../constants/config';
 
-const DRAWER_WIDTH = Dimensions.get('window').width * DRAWER_WIDTH_RATIO;
+const DRAWER_WIDTH = Math.min(Dimensions.get('window').width * 0.82, 340);
 
 export const styles = StyleSheet.create({
   root: {
@@ -12,7 +12,7 @@ export const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
   },
   drawer: {
     position: 'absolute',
@@ -20,85 +20,89 @@ export const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: DRAWER_WIDTH,
-    backgroundColor: Colors.drawerBg,
+    backgroundColor: '#FFFFFF',
     borderRightWidth: 1,
-    borderRightColor: Colors.border,
-    shadowColor: '#000',
-    shadowOpacity: 0.18,
-    shadowRadius: 20,
-    elevation: 25,
+    borderRightColor: '#E2E8F0',
   },
   inner: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 24) + 20 : Layout.drawerPaddingTop,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 24) + 16 : Layout.drawerPaddingTop,
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 24,
   },
 
-  // Header
+  // ── Header & Profile ──
   header: {
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    marginBottom: 20,
+  },
+  headerTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 24,
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   brandName: {
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: '500',
     color: Colors.text,
+    letterSpacing: -0.2,
   },
   brandTag: {
-    fontSize: 10,
-    color: Colors.textSub,
-    letterSpacing: 1.5,
-    marginTop: 2,
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 1,
   },
   closeBtn: {
-    width: 32,
-    height: 32,
+    width: 34,
+    height: 34,
     borderRadius: 8,
-    backgroundColor: Colors.surfaceUp,
+    backgroundColor: '#F8FAFC',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  closeIcon: {
-    fontSize: 13,
-    color: Colors.textSub,
+    borderColor: '#E2E8F0',
   },
 
-  // Operator card
-  operatorCard: {
+  // Profile Box inside Header
+  profileBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: Colors.surfaceUp,
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 28,
+    padding: 12,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#F1F5F9',
   },
   operatorAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.accentDim,
-    borderWidth: 2,
-    borderColor: Colors.accent,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: Colors.primaryDim,
     alignItems: 'center',
     justifyContent: 'center',
   },
   operatorAvatarText: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
-    color: Colors.accent,
+    color: Colors.primary,
+  },
+  profileTextWrap: {
+    flex: 1,
   },
   operatorName: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '500',
     color: Colors.text,
+    letterSpacing: -0.2,
   },
   statusRow: {
     flexDirection: 'row',
@@ -107,113 +111,89 @@ export const styles = StyleSheet.create({
     marginTop: 3,
   },
   onlineDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    backgroundColor: Colors.green,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10B981',
   },
   statusText: {
     fontSize: 11,
-    color: Colors.textSub,
+    color: '#64748B',
+    fontWeight: '500',
   },
 
-  // Nav items
+  // ── Nav Items ──
+  navSection: {
+    gap: 4,
+  },
   navSectionLabel: {
-    fontSize: 10,
-    color: Colors.textMuted,
-    letterSpacing: 2,
-    fontWeight: '700',
-    marginBottom: 10,
+    fontSize: 11,
+    color: '#94A3B8',
+    letterSpacing: 1.2,
+    fontWeight: '600',
+    marginBottom: 8,
+    paddingHorizontal: 8,
   },
   navItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    borderRadius: 12,
+    borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 12,
-    marginBottom: 6,
   },
   navItemActive: {
-    backgroundColor: Colors.surfaceUp,
+    backgroundColor: Colors.primaryDim,
+  },
+  navItemPressed: {
+    backgroundColor: '#F8FAFC',
   },
   navIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: Colors.bg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  navIconActive: {
-    backgroundColor: Colors.accentDim,
-    borderColor: Colors.accent,
-  },
-  navIconText: {
-    fontSize: 16,
-    color: Colors.textSub,
-  },
-  navIconTextActive: {
-    color: Colors.accent,
+    marginRight: 14,
   },
   navLabel: {
     fontSize: 15,
-    fontWeight: '600',
-    color: Colors.textSub,
+    fontWeight: '500',
+    color: '#334155',
+    flex: 1,
   },
   navLabelActive: {
-    color: Colors.text,
+    color: Colors.primary,
+    fontWeight: '700',
   },
-  navDesc: {
-    fontSize: 11,
-    color: Colors.textMuted,
-    marginTop: 1,
-  },
-  activeIndicator: {
-    width: 4,
-    height: 28,
-    borderRadius: 2,
-    backgroundColor: Colors.accent,
+  chevronActive: {
+    marginLeft: 8,
   },
 
-  // Footer
+  // ── Footer ──
   footer: {
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: '#F1F5F9',
     paddingTop: 16,
-  },
-  // Override marginBottom on operatorCard when inside footer
-  operatorCardFooter: {
-    marginBottom: 12,
+    gap: 10,
   },
   logoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    backgroundColor: 'rgba(220,38,38,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(220,38,38,0.2)',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 16,
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: '#FEF2F2',
+  },
+  logoutBtnPressed: {
+    opacity: 0.8,
   },
   logoutBtnDisabled: {
     opacity: 0.5,
   },
-  logoutIcon: {
-    fontSize: 18,
-    color: Colors.red,
-  },
   logoutText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: Colors.red,
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#EF4444',
   },
   versionText: {
     fontSize: 11,
-    color: Colors.textMuted,
+    color: '#94A3B8',
     textAlign: 'center',
   },
 });

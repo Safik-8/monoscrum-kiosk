@@ -1,20 +1,16 @@
 import { StyleSheet, Platform, StatusBar } from 'react-native';
-import { Colors } from '../../constants/theme';
+import { Colors, Radius } from '../../constants/theme';
 
 // Both side slots must be identical width — this is what guarantees true center
 const SIDE_SLOT_WIDTH = 52;
-const CONTENT_ROW_HEIGHT = 54;
+const CONTENT_ROW_HEIGHT = 58;
 
 export const styles = StyleSheet.create({
   header: {
-    backgroundColor: Colors.headerBg,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: '#E2E8F0', // border-slate-200 only, no shadows
     zIndex: 50,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 4,
   },
 
   // Explicit safe-area spacer — cleanly separated from the content row
@@ -31,76 +27,66 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
 
-  // ── Side slots ────────────────────────────────────────────────────────────
-  sideSlot: {
-    width: SIDE_SLOT_WIDTH,
-    height: CONTENT_ROW_HEIGHT,
-    alignItems: 'flex-start',      // left slot: content hugs left
-    justifyContent: 'center',      // vertically center within the slot
-    zIndex: 2,                     // ensure it stays clickable above the absolute center
-  },
-  sideSlotRight: {
-    alignItems: 'flex-end',        // right slot: content hugs right
-  },
-
-  // ── Center slot ───────────────────────────────────────────────────────────
-  centerSlot: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
+  // ── Brand Cluster (Logo + Title adjacent) ──────────────────────────────────
+  brandCluster: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',      // perfectly centered to the full header width
-    gap: 8,
-    zIndex: 1,                     // sits behind the side buttons
-    pointerEvents: 'none',         // let clicks pass through to side buttons if they overlap
+    gap: 12,
+    flex: 1,
   },
   pageTitle: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 20,
+    fontWeight: '600',
     color: Colors.text,
-    lineHeight: 18,
-  },
-  brand: {
-    fontSize: 10,
-    color: Colors.textSub,
-    letterSpacing: 0.4,
+    includeFontPadding: false,
+    letterSpacing: -0.3,
   },
 
-  // ── Hamburger ─────────────────────────────────────────────────────────────
-  menuBtn: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-    gap: 5,
+  // ── Premium Avatar ────────────────────────────────────────────────────────
+  avatarBtn: {
+    position: 'relative',
+    padding: 2,
   },
-  line: {
-    width: 24,
-    height: 2,
-    backgroundColor: Colors.text,
-    borderRadius: 2,
+  avatarBtnPressed: {
+    opacity: 0.75,
   },
-  lineMid: {
-    width: 16,
-  },
-
-  // ── Avatar ────────────────────────────────────────────────────────────────
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Colors.accentDim,
-    borderWidth: 2,
-    borderColor: Colors.accent,
+  avatarCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#F1F5F9', // light slate surface
+    borderWidth: 1,
+    borderColor: '#E2E8F0',    // border-slate-200
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: {
+  avatarOnlineDot: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#10B981', // green active session dot
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  backBtn: {
+    padding: 6,
+    marginLeft: -6,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  userAvatarImg: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+  },
+  userAvatarInitials: {
     fontSize: 14,
     fontWeight: '700',
-    color: Colors.accent,
+    color: Colors.primary,
+    includeFontPadding: false,
   },
 });

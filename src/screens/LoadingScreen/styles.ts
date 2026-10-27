@@ -44,16 +44,16 @@ export const styles = StyleSheet.create({
     alignItems: 'baseline',
   },
   brandFirst: {
-    fontSize: 27,
-    fontWeight: '800',
-    color: '#0284C7', // energetic modern SaaS cyan/blue
-    letterSpacing: 2,
+    fontSize: 24,
+    fontWeight: '500',
+    color: '#0F172A',
+    letterSpacing: -0.3,
   },
   brandSecond: {
-    fontSize: 27,
-    fontWeight: '800',
-    color: '#0F172A', // deep navy slate
-    letterSpacing: 2,
+    fontSize: 24,
+    fontWeight: '500',
+    color: '#0F172A',
+    letterSpacing: -0.3,
   },
   tagline: {
     fontSize: 11,
