@@ -2,6 +2,7 @@ export type Session = {
   accessToken: string;
   deviceId: string;
   operatorName?: string;
+  profileImage?: string;
   regionId?: string;
   regionName?: string;
   organizationId?: string;
@@ -20,6 +21,7 @@ export type AuthResponse = {
   data?: {
     user?: { 
       name?: string;
+      profileImage?: string;
       regionId?: string;
       regionName?: string;
       organizationId?: string;

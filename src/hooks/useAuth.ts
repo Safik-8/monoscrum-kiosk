@@ -97,7 +97,8 @@ export function useAuth(): UseAuthReturn {
     return {
       accessToken: data.token,
       deviceId,
-      operatorName: data.data?.user?.name,
+      operatorName: data.data?.user?.name || data.data?.user?.username,
+      profileImage: data.data?.user?.profileImage,
       regionId: data.data?.user?.regionId,
       regionName: data.data?.user?.regionName,
       organizationId: data.data?.user?.organizationId,

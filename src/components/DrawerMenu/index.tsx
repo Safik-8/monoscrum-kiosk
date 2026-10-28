@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable, Animated } from 'react-native';
+import { View, Text, Pressable, Animated, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTab, Session } from '../../types';
 import { Colors } from '../../constants/theme';
@@ -73,7 +73,11 @@ export function DrawerMenu({
             {/* Operator Quick Profile */}
             <View style={styles.profileBox}>
               <View style={styles.operatorAvatar}>
-                <Text style={styles.operatorAvatarText}>{initial}</Text>
+                {session?.profileImage ? (
+                  <Image source={{ uri: session.profileImage }} style={styles.operatorAvatarImage} />
+                ) : (
+                  <Text style={styles.operatorAvatarText}>{initial}</Text>
+                )}
               </View>
               <View style={styles.profileTextWrap}>
                 <Text style={styles.operatorName} numberOfLines={1}>

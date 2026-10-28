@@ -27,6 +27,7 @@ import { FixedHeader } from './src/components/FixedHeader';
 import { BottomTabBar } from './src/components/BottomTabBar';
 import { DrawerMenu } from './src/components/DrawerMenu';
 import { LocationModal } from './src/components/LocationModal';
+import { LogoutModal } from './src/components/LogoutModal';
 
 // Screens
 import { LoadingScreen } from './src/screens/LoadingScreen';
@@ -47,6 +48,7 @@ export default function App() {
   const drawer = useDrawer();
   const [activeTab, setActiveTab] = useState<BottomTab>('new');
   const [historySelectedUser, setHistorySelectedUser] = useState<any | null>(null);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const [permission, requestCameraPermission] = useCameraPermissions();
   const hasCameraPermission = permission?.granted ?? false;
@@ -132,6 +134,16 @@ export default function App() {
         onClose={() => auth.setKioskLocation({ latitude: 0, longitude: 0 })} // fallback if dismissed
       />
 
+      <LogoutModal
+        visible={showLogoutModal}
+        busy={auth.busy}
+        onConfirm={async () => {
+          await auth.logout();
+          setShowLogoutModal(false);
+        }}
+        onCancel={() => setShowLogoutModal(false)}
+      />
+
       <StatusBar style="dark" />
 
       {/* Fixed top header reused across all 4 pages */}
@@ -192,7 +204,7 @@ export default function App() {
           <SettingsScreen
             session={auth.session}
             busy={auth.busy}
-            onLogout={auth.logout}
+            onLogout={() => setShowLogoutModal(true)}
           />
         )}
       </View>
@@ -209,7 +221,7 @@ export default function App() {
         busy={auth.busy}
         onClose={drawer.closeDrawer}
         onTabSelect={setActiveTab}
-        onLogout={auth.logout}
+        onLogout={() => setShowLogoutModal(true)}
       />
     </View>
   );

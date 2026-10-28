@@ -89,6 +89,12 @@ export const styles = StyleSheet.create({
     backgroundColor: Colors.primaryDim,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  operatorAvatarImage: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
   },
   operatorAvatarText: {
     fontSize: 17,

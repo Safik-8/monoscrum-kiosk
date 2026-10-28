@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Platform, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Session } from '../../types';
 import { Colors } from '../../constants/theme';
@@ -36,7 +36,11 @@ export function SettingsScreen({ session, busy, onLogout }: Props) {
       {/* Profile Row (Android Account style) */}
       <View style={styles.profileRow}>
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{initial}</Text>
+          {session?.profileImage ? (
+            <Image source={{ uri: session.profileImage }} style={styles.avatarImage} />
+          ) : (
+            <Text style={styles.avatarText}>{initial}</Text>
+          )}
         </View>
         <View style={styles.profileDetails}>
           <Text style={styles.operatorName}>{session?.operatorName || 'Kiosk Operator'}</Text>
