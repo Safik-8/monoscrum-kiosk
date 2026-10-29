@@ -93,14 +93,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontSize: Typography?.titleLarge?.fontSize || 18,
+    fontSize: 18,
     fontWeight: '700',
     color: '#0F172A',
     marginBottom: 8,
     textAlign: 'center',
   },
   message: {
-    fontSize: Typography?.bodyMedium?.fontSize || 14,
+    fontSize: 14,
     color: '#64748B',
     textAlign: 'center',
     marginBottom: 24,
