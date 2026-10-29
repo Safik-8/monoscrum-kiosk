@@ -4,20 +4,13 @@ import { Colors, Radius } from '../../constants/theme';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.bg,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
   },
   card: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.modal,
-    padding: 28,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    shadowColor: Colors.primary,
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    elevation: 6,
+    backgroundColor: '#FFFFFF',
+    padding: 0,
   },
   brandRow: {
     flexDirection: 'row',
